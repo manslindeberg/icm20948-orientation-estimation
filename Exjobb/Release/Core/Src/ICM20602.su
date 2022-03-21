@@ -1,0 +1,13 @@
+ICM20602.c:33:6:ICM_ReadBytes	40	static
+ICM20602.c:42:6:ICM_WriteBytes	40	static
+ICM20602.c:52:6:ICM_ReadOneByte	24	static
+ICM20602.c:67:6:ICM_WriteOneByte	32	static
+ICM20602.c:163:6:ICM_CSHigh	8	static
+ICM20602.c:168:6:ICM_CSLow	8	static
+ICM20602.c:174:9:ICM_GyroConfig	24	static
+ICM20602.c:246:9:ICM_AccConfig	24	static
+ICM20602.c:316:6:ICM_ReadGyroData	32	static
+ICM20602.c:218:6:ICM_GyroCalibration	272	static
+ICM20602.c:333:6:ICM_ReadAccData	32	static
+ICM20602.c:351:9:ICM_WHOAMI	16	static
+ICM20602.c:79:6:ICM_Initialize	128	static

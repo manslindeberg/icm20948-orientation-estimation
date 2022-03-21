@@ -1,0 +1,14 @@
+calc.c:14:6:CalcQuaternionToEuler	48	static
+calc.c:21:6:CalcQuaternionToEuler2	48	static
+calc.c:51:6:CalcGyroEuler	24	static
+calc.c:58:6:CalcAccLinearToEuler	40	static
+calc.c:67:6:CalcGyroQuaternion	88	static
+calc.c:78:6:MahonyFilter	96	static
+calc.c:118:6:GyroLowPassFilter	32	static
+calc.c:131:6:GyroHighPassFilter	32	static
+calc.c:148:19:q_multiplication	40	static
+calc.c:158:6:q_scalar	16	static
+calc.c:166:19:q_add	40	static
+calc.c:177:19:q_subtract	40	static
+calc.c:189:19:q_inverse	40	static
+calc.c:198:6:q_normalize	32	static
