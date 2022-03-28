@@ -31,7 +31,7 @@ struct cartesian_vector {
 	float z;
 };
 
-void CalcQuaternionToEuler(struct quaternion quat, struct euler_angles*, float*);
+void CalcQuaternionToEuler(struct quaternion quat, struct euler_angles*);
 void CalcQuaternionToEuler2(struct quaternion quat, struct euler_angles *eu);
 void CalcGyroQuaternion(float* gyro_data, struct quaternion*);
 void CalcGyroEuler(float *gyro_data, struct euler_angles*);

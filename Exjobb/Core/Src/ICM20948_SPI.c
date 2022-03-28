@@ -172,6 +172,7 @@ void ICM_Initialize(SPI_HandleTypeDef *hspi, UART_HandleTypeDef *huart)
 		HAL_UART_Transmit(huart, (uint8_t*) uart_buffer, strlen((char*) uart_buffer), 1000);
 	}
 
+
 	HAL_Delay(20);
 
 	/*Configure*/
@@ -237,42 +238,71 @@ uint8_t ICM_GyroConfig(SPI_HandleTypeDef *hspi, uint16_t dps)
 }
 
 
-void ICM_GyroCalibration(SPI_HandleTypeDef *hspi,UART_HandleTypeDef* huart, float *gyro_bias){
-	uint8_t gyro_raw[6] = {0,0,0,0,0,0};
-	int16_t gyro_temp[3] = {0,0,0};
-	float gyro_int[3] = {0,0,0};
-	char uart_buffer_test[200];
+void ICM_GyroCalibration(SPI_HandleTypeDef *hspi,UART_HandleTypeDef* huart, float *gyro_bias)
+{
+	char uart_buffer[200];
+	float gyro_data[3] = {0,0,0};
+	float zero_bias[3] = {0,0,0};
+	float gyro_accumulated[3] = {0,0,0};
+
 	ICM_SelectBank(hspi,USER_BANK_0);
 	HAL_Delay(10);
 
-	for (int16_t i = 0; i < 500; i++)
+	for (int16_t i = 0; i < GYRO_CALIBRATION_SAMPLES; i++)
 	{
-		ICM_ReadBytes(hspi, REG_GYRO_XOUT_H, gyro_raw, 6);
-		UINT8_TO_INT16(gyro_temp[0], gyro_raw[0], gyro_raw[1]);
-		UINT8_TO_INT16(gyro_temp[1], gyro_raw[2], gyro_raw[3]);
-		UINT8_TO_INT16(gyro_temp[2], gyro_raw[4], gyro_raw[5]);
-
-		gyro_int[0] = gyro_int[0] + ((float) gyro_temp[0] / g_gyro_scale_factor);
-		gyro_int[1] = gyro_int[1] + ((float) gyro_temp[1] / g_gyro_scale_factor);
-		gyro_int[2] = gyro_int[2] + ((float) gyro_temp[2] / g_gyro_scale_factor);
+		ICM_ReadGyroData(hspi, gyro_data, zero_bias);
+		gyro_accumulated[0] += gyro_data[0];
+		gyro_accumulated[1] += gyro_data[1];
+		gyro_accumulated[2] += gyro_data[2];
 		HAL_Delay(20);
 	}
 
+	gyro_bias[0] =  -1*gyro_accumulated[0] / GYRO_CALIBRATION_SAMPLES;
+	gyro_bias[1] =  -1*gyro_accumulated[1] / GYRO_CALIBRATION_SAMPLES;
+	gyro_bias[2] =  -1*gyro_accumulated[2] / GYRO_CALIBRATION_SAMPLES;
 
-	gyro_bias[0] =  -1*gyro_int[0] / 500.0;
-	gyro_bias[1] =  -1*gyro_int[1] / 500.0;
-	gyro_bias[2] =  -1*gyro_int[2] / 500.0;
-
-	sprintf(uart_buffer_test,
+	sprintf(uart_buffer,
 					"\r\n Calibrating Gyroscope:"
 					"(Gyro x-offset: %.4f | Gyro y-offset: %.4f | Gyro z-offset: %.4f)"
 					"\r\n",
 					gyro_bias[0], gyro_bias[1], gyro_bias[2]);
-	HAL_UART_Transmit(huart, (uint8_t*)uart_buffer_test,strlen(uart_buffer_test),1000);
+	HAL_UART_Transmit(huart, (uint8_t*) uart_buffer ,strlen(uart_buffer),1000);
 }
 
 
 
+void ICM_AccCalibration(SPI_HandleTypeDef *hspi, UART_HandleTypeDef* huart, float *acc_bias)
+{
+	char uart_buffer[200];
+	float acc_data[3] = {0,0,0};
+	float zero_bias[3] = {0,0,0};
+	float acc_accumulated[3] = {0,0,0};
+
+	ICM_SelectBank(hspi,USER_BANK_0);
+	HAL_Delay(10);
+
+	for (int16_t i = 0; i < ACC_CALIBRATION_SAMPLES; i++)
+	{
+		ICM_ReadAccData(hspi, acc_data, zero_bias);
+		acc_accumulated[0] += acc_data[0];
+		acc_accumulated[1] += acc_data[1];
+		acc_accumulated[2] += acc_data[2];
+		HAL_Delay(20);
+	}
+
+	acc_bias[0] =  -1*acc_accumulated[0] / ACC_CALIBRATION_SAMPLES;
+	acc_bias[1] =  -1*acc_accumulated[1] / ACC_CALIBRATION_SAMPLES;
+	acc_bias[2] =  1 - (acc_accumulated[2] / ACC_CALIBRATION_SAMPLES);
+
+	sprintf(uart_buffer,
+					"\r\n Calibrating Accelerometer:"
+					"(Acc x-offset: %.4f | Acc y-offset: %.4f | Acc z-offset: %.4f)"
+					"\r\n",
+					acc_bias[0], acc_bias[1], acc_bias[2]);
+	HAL_UART_Transmit(huart, (uint8_t*)uart_buffer ,strlen(uart_buffer),1000);
+}
+
+/*
 void ICM_AccCalibration(SPI_HandleTypeDef *hspi, UART_HandleTypeDef* huart, float *acc_bias){
 
 	float acc_data[3] = {0,0,0};
@@ -300,7 +330,7 @@ void ICM_AccCalibration(SPI_HandleTypeDef *hspi, UART_HandleTypeDef* huart, floa
 	HAL_UART_Transmit(huart, (uint8_t*)uart_buffer_test,strlen(uart_buffer_test),1000);
 
 }
-
+*/
 void ICM_ReadGyroData(SPI_HandleTypeDef *hspi, float* gyro_data, float *gyro_bias)
 {
 	uint8_t gyro_raw[6] = {0,0,0,0,0,0};
@@ -314,23 +344,22 @@ void ICM_ReadGyroData(SPI_HandleTypeDef *hspi, float* gyro_data, float *gyro_bia
 	gyro_data[0] = (((float) gyro_int[0]  / g_gyro_scale_factor) + gyro_bias[0])*DEG_2_RAD;
 	gyro_data[1] = (((float) gyro_int[1]  / g_gyro_scale_factor) + gyro_bias[1])*DEG_2_RAD;
 	gyro_data[2] = (((float) gyro_int[2]  / g_gyro_scale_factor) + gyro_bias[2])*DEG_2_RAD;
-
 }
 
 
-void ICM_ReadAccData(SPI_HandleTypeDef *hspi, float* accel_data){
+void ICM_ReadAccData(SPI_HandleTypeDef *hspi, float* accel_data, float* accel_bias){
 
 	uint8_t acc_data[6] = {0,0,0,0,0,0};
 	int16_t acc_int[3] = {0,0,0};
 	ICM_ReadBytes(hspi,REG_ACCEL_XOUT_H,acc_data,6);
 
-	UINT8_TO_INT16(acc_int[0],acc_data[0],acc_data[1]);
-	UINT8_TO_INT16(acc_int[1],acc_data[2],acc_data[3]);
-	UINT8_TO_INT16(acc_int[2],acc_data[4],acc_data[5]);
+	UINT8_TO_INT16(acc_int[0],acc_data[0], acc_data[1]);
+	UINT8_TO_INT16(acc_int[1],acc_data[2], acc_data[3]);
+	UINT8_TO_INT16(acc_int[2],acc_data[4], acc_data[5]);
 
-	accel_data[0] = ((float) acc_int[0] / acc_scale_factor);
-	accel_data[1] = ((float) acc_int[1] / acc_scale_factor);
-	accel_data[2] = ((float) acc_int[2] / acc_scale_factor);
+	accel_data[0] = ((float) acc_int[0] / acc_scale_factor + accel_bias[0]);
+	accel_data[1] = ((float) acc_int[1] / acc_scale_factor + accel_bias[1]);
+	accel_data[2] = ((float) acc_int[2] / acc_scale_factor + accel_bias[2]);
 }
 
 /*configure accelerometer sensitivity and scaler**/

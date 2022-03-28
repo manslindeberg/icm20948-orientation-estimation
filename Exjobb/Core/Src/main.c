@@ -119,7 +119,7 @@ int main(void)
   	float accel_data[3] = {0,0,0};
   	float gyro_data[3] = {0,0,0};
   	static float gyro_bias[3] = {0,0,0};
-  	static float accel_offset[2] = {0,0};
+  	static float accel_bias[3] = {0,0,0};
 
   	// High pass Filter Variables
 
@@ -139,7 +139,7 @@ int main(void)
   	uint16_t uart_timer_scaler = 0;
 
   	ICM_GyroCalibration(&hspi1,&huart2, gyro_bias);
-  	ICM_AccCalibration(&hspi1, &huart2, accel_offset);
+  	ICM_AccCalibration(&hspi1, &huart2, accel_bias);
 
   	sprintf(uart_buffer, "UART_PREAMBLE\r\n");
   	HAL_UART_Transmit(&huart2,(uint8_t*)uart_buffer, strlen(uart_buffer), 1000);
@@ -153,18 +153,18 @@ int main(void)
   while (1)
   {
 	  	  __HAL_TIM_SET_COUNTER(&htim16, 0);
-	   	  uart_timer_scaler = (uart_timer_scaler + 1) % 10; // every 100th
+	   	  uart_timer_scaler = (uart_timer_scaler + 1) % 10; // every 10th
 	   	  ICM_ReadGyroData(&hspi1, gyro_data, gyro_bias);
-	   	  ICM_ReadAccData(&hspi1, accel_data);
+	   	  ICM_ReadAccData(&hspi1, accel_data, accel_bias);
 	   	  GyroLowPassFilter(gyro_data, prev_low_pass_gyro, low_pass_gyro, low_alpha);
 	   	  MahonyFilter(low_pass_gyro, accel_data, &quat);
 
 	   	  if(uart_timer_scaler == 0)
 	   	  {
-	   		 CalcQuaternionToEuler(quat, &angles, accel_offset);
+	   		 CalcQuaternionToEuler(quat, &angles);
 	   		 sprintf(uart_buffer,
 	   		  "{'yaw':%.5f, 'pitch':%.5f, 'roll':%.5f, duration : %.3f}\r\n",
-	   		  angles.yaw, angles.pitch, angles.roll, duration);
+	   		  accel_data[0], accel_data[1], accel_data[2], duration);
 	   		 HAL_UART_Transmit(&huart2,(uint8_t*)uart_buffer, strlen(uart_buffer), 1000);
 	   	  }
 

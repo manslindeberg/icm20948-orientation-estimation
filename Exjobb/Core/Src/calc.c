@@ -11,10 +11,10 @@ static float k_p = 0.4;
 
 float i[3] = {0,0,0};
 
-void CalcQuaternionToEuler(struct quaternion quat, struct euler_angles* eu, float* accel_offset)
+void CalcQuaternionToEuler(struct quaternion quat, struct euler_angles* eu)
 {
-	eu->roll = 90 - atan2((quat.q1*quat.q2 + quat.q3*quat.q4), 0.5 - (quat.q2*quat.q2 + quat.q3*quat.q3))*RAD_2_DEG - accel_offset[0];
-	eu->pitch = asin(2.0*(quat.q1*quat.q3 - quat.q2*quat.q4))*RAD_2_DEG - accel_offset[1];
+	eu->roll = 90 - atan2((quat.q1*quat.q2 + quat.q3*quat.q4), 0.5 - (quat.q2*quat.q2 + quat.q3*quat.q3))*RAD_2_DEG;
+	eu->pitch = asin(2.0*(quat.q1*quat.q3 - quat.q2*quat.q4))*RAD_2_DEG;
 	eu->yaw = -atan2((quat.q2*quat.q3 + quat.q1*quat.q4), 0.5 - (quat.q3*quat.q3 + quat.q4*quat.q4))*RAD_2_DEG;
 }
 
