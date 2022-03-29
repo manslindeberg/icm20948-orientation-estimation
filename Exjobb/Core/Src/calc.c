@@ -1,3 +1,25 @@
+/* MIT License
+
+Copyright (c) 2022 Lindeberg, M & Hansson, L
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE. */
+
 #include <math.h>
 #include "main.h"
 #include "calc.h"
@@ -9,55 +31,30 @@
 static float k_i = 0.5;
 static float k_p = 0.2;
 float eInt[3] = {0,0,0};
-float i[3] = {0,0,0};
 
 /*Madgwick Filter Parameters */
 static float Beta = 0.1;
 
+
+/* Converts Quaternion coordinates into Euler Angles */
 void CalcQuaternionToEuler(struct quaternion quat, struct euler_angles* eu)
 {
-	eu->roll = 90 - atan2((quat.q1*quat.q2 + quat.q3*quat.q4) 0.5 - (quat.q2*quat.q2 + quat.q3*quat.q3))*RAD_2_DEG;
-	eu->pitch = asin(2.0*(quat.q1*quat.q3 - quat.q2*quat.q4))*RAD_2_DEG;
-	eu->yaw = -atan2((quat.q2*quat.q3 + quat.q1*quat.q4), 0.5 - (quat.q3*quat.q3 + quat.q4*quat.q4))*RAD_2_DEG;
-}
-
-void CalcQuaternionToEuler2(struct quaternion quat, struct euler_angles *eu)
-{
-	float qmod = sqrt(pow(quat.q1,2) + pow(quat.q2,2) +
-			pow(quat.q3,2) + pow(quat.q4,2));
-	float q_t = quat.q1*quat.q3 - quat.q1*quat.q4;
-
-	/* Checking for singularities */
-	if(q_t > qmod/2)
-	{
-		eu->yaw = 2*atan2f(quat.q2, quat.q1)*RAD_2_DEG;
-		eu->pitch = 90.0;
-		eu->roll = 0.0;
-	}else if(q_t < -qmod/2)
-	{
-		eu->yaw = -2*atan2f(quat.q2, quat.q1)*RAD_2_DEG;
-		eu->pitch = -90.0;
-		eu->roll = 0.0;
-	}else{
-		eu->yaw = atan2f((2*quat.q1*quat.q4 + quat.q2*quat.q3),
-				pow(quat.q1,2) + pow(quat.q2,2) - pow(quat.q3,2) - pow(quat.q4,2))*RAD_2_DEG;
-		if (2*q_t/qmod < 1 && 2*q_t/qmod >= -1)
-		{
-			eu->pitch = asin(2*q_t/qmod)*RAD_2_DEG;
-		}
-		eu->roll = atan2f((2*quat.q1*quat.q2 + quat.q3*quat.q4),
-					pow(quat.q1,2) - pow(quat.q2,2) - pow(quat.q3,2) + pow(quat.q4,2))*RAD_2_DEG;
-	}
+	eu->roll = 90 - atan2f((quat.q1*quat.q2 + quat.q3*quat.q4), 0.5 - (quat.q2*quat.q2 + quat.q3*quat.q3))*RAD_2_DEG;
+	eu->pitch = asinf(2.0*(quat.q1*quat.q3 - quat.q2*quat.q4))*RAD_2_DEG;
+	eu->yaw = -atan2f((quat.q2*quat.q3 + quat.q1*quat.q4), 0.5 - (quat.q3*quat.q3 + quat.q4*quat.q4))*RAD_2_DEG; //clockwise direction
 }
 
 
+/* Simple Riemann-integration of gyroscope data */
 void CalcGyroEuler(float *gyro_data, struct euler_angles* eu_gyro_est)
 {
-	eu_gyro_est->yaw += gyro_data[2]*SAMPLE_TIME_ICM/1000.0*RAD_2_DEG;
-	eu_gyro_est->pitch += gyro_data[1]*SAMPLE_TIME_ICM/1000.0*RAD_2_DEG;
-	eu_gyro_est->roll += gyro_data[0]*SAMPLE_TIME_ICM/1000.0*RAD_2_DEG;
+	eu_gyro_est->yaw += gyro_data[2]*SAMPLE_TIME_ICM/1000.0;
+	eu_gyro_est->pitch += gyro_data[1]*SAMPLE_TIME_ICM/1000.0;
+	eu_gyro_est->roll += gyro_data[0]*SAMPLE_TIME_ICM/1000.0;
 }
 
+
+/* Calculates Pitch & roll from direction of gravity */
 void CalcAccLinearToEuler(float* accel_data, struct euler_angles* eu_acc_est)
 {
 	float pitch = atan(accel_data[0]/accel_data[2])* RAD_2_DEG;
@@ -67,25 +64,10 @@ void CalcAccLinearToEuler(float* accel_data, struct euler_angles* eu_acc_est)
 	eu_acc_est->pitch = pitch;
 }
 
+
+/* Quaternion integration using Runge-Kutta method. */
 void CalcGyroQuaternion(float* gyro_data, struct quaternion *q)
 {
-	/*
-	if (gyro_data[0] < GYRO_THRESHOLD && gyro_data[0] > -GYRO_THRESHOLD)
-	{
-		gyro_data[0] = 0.0;
-	}
-
-	if (gyro_data[1] < GYRO_THRESHOLD && gyro_data[1] > -GYRO_THRESHOLD)
-	{
-		gyro_data[1] = 0.0;
-	}
-
-	if (gyro_data[2] < GYRO_THRESHOLD && gyro_data[2] > -GYRO_THRESHOLD)
-	{
-		gyro_data[2] = 0.0;
-	}
-	*/
-
 	struct quaternion q_gyro_rate = {0, gyro_data[0], gyro_data[1], gyro_data[2]};
 
 	q_gyro_rate = q_multiplication(*q, q_gyro_rate);
@@ -94,50 +76,6 @@ void CalcGyroQuaternion(float* gyro_data, struct quaternion *q)
 	q_normalize(q);
 }
 
-
-
-void MahonyFilter(float *gyro_data, float* accel_data, struct quaternion *q)
-{
-	float accelLength;
-	float gyro_temp[3];
-	float v[3] = {0,0,0};	//corrected frame vector
-	float e[3] = {0,0,0};	//error estimate vector
-
-	gyro_data[0] *= DEG_2_RAD;
-	gyro_data[1] *= DEG_2_RAD;
-	gyro_data[2] *= DEG_2_RAD;
-
-	accelLength = sqrt(accel_data[0]*accel_data[0] + accel_data[1]*accel_data[1] + accel_data[2]*accel_data[2]);
-
-	// Normalize accelerometer data
-	accel_data[0] /= accelLength;
-	accel_data[1] /= accelLength;
-	accel_data[2] /= accelLength;
-
-	// Estimated direction of gravity in the body frame
-	v[0] = 2.0*(q->q2*q->q4 - q->q1 * q->q3);
-	v[1] = 2.0*(q->q1*q->q2 + q->q3 * q->q4);
-	v[2] = q->q1*q->q1 - q->q2*q->q2 - q->q3*q->q3 + q->q4 * q->q4;
-
-	e[0] = (accel_data[1] * v[2] - accel_data[2] * v[1]);
-	e[1] = (accel_data[2] * v[0] - accel_data[0] * v[2]);
-	e[2] = (accel_data[0] * v[1] - accel_data[1] * v[0]);
-
-	// accumulate integral error
-	if (k_i > 0.0)
-	{
-		i[0] += e[0];
-		i[1] += e[1];
-		i[2] += e[2];
-	}
-
-	// Proportionate feedback
-	gyro_temp[0] = gyro_data[0] + k_p * e[0] + k_i*i[0];
-	gyro_temp[1] = gyro_data[1] + k_p * e[1] + k_i*i[1];
-	gyro_temp[2] = gyro_data[2] + k_p * e[2] + k_i*i[2];
-
-	CalcGyroQuaternion(gyro_temp, q);
-}
 
 /* Credit to xio-technologies for open-source implementation https://github.com/xioTechnologies/Open-Source-AHRS-With-x-IMU*/
 void MahonyFilterXIO(float *gyro_data, float *accel_data, struct quaternion *q)
@@ -181,6 +119,24 @@ void MahonyFilterXIO(float *gyro_data, float *accel_data, struct quaternion *q)
 		eInt[2] = 0.0;
 	}
 
+	// Zero gyroscope measurements if they are below the threshold. Only if threshold is defind
+	#ifdef GYRO_THRESHOLD
+		if (gx < GYRO_THRESHOLD && gx > -GYRO_THRESHOLD)
+		{
+			gx = 0.0;
+		}
+
+		if (gy < GYRO_THRESHOLD && gy > -GYRO_THRESHOLD)
+		{
+			gy = 0.0;
+		}
+
+		if (gz < GYRO_THRESHOLD && gz > -GYRO_THRESHOLD)
+		{
+			gz = 0.0;
+		}
+	#endif
+
 	// Apply feedback terms
 	gx = gx + k_p * ex + k_i * eInt[0];
 	gy = gy + k_p * ey + k_i * eInt[1];
@@ -203,6 +159,7 @@ void MahonyFilterXIO(float *gyro_data, float *accel_data, struct quaternion *q)
 	q->q3 = q3 * norm;
 	q->q4 = q4 * norm;
 }
+
 
 /* Credit to xio-technologies for open-source implementation https://github.com/xioTechnologies/Open-Source-AHRS-With-x-IMU*/
 void MadgwickFilterXIO(float *gyro_data, float *accel_data, struct quaternion *q)
@@ -266,6 +223,7 @@ void MadgwickFilterXIO(float *gyro_data, float *accel_data, struct quaternion *q
 	q->q3 = q3 * norm;
 	q->q4 = q4 * norm;
 }
+
 
 void MadgwickFilterArduino(float *gyro_data, float *accel_data, struct quaternion *q)
 {
@@ -347,6 +305,8 @@ void MadgwickFilterArduino(float *gyro_data, float *accel_data, struct quaternio
 	q->q4 = q3;
 }
 
+
+/* Exponential Weighted Moving Average Low Pass Filter */
 void GyroLowPassFilter(float *gyro_data, float* prev_filt, float* filt, float a)
 {
 	// Calculating new high-pass filtered data
@@ -360,6 +320,7 @@ void GyroLowPassFilter(float *gyro_data, float* prev_filt, float* filt, float a)
 }
 
 
+/* Exponential Weighted Moving Average High Pass Filter */
 void GyroHighPassFilter(float *gyro_data, float* prev_gyro_data, float* prev_filt, float* filt, float a)
 {
 	// Calculating new high-pass filtered data
@@ -377,6 +338,7 @@ void GyroHighPassFilter(float *gyro_data, float* prev_gyro_data, float* prev_fil
 	prev_filt[2] = filt[2];
 }
 
+
 struct quaternion q_multiplication(struct quaternion quad_left, struct quaternion quad_right)
 {
 	struct quaternion result = {0,0,0,0};
@@ -387,6 +349,7 @@ struct quaternion q_multiplication(struct quaternion quad_left, struct quaternio
     return result;
 }
 
+
 void q_scalar(struct quaternion *quad, float s)
 {
 	quad->q1 *= s;
@@ -394,6 +357,7 @@ void q_scalar(struct quaternion *quad, float s)
 	quad->q3 *= s;
 	quad->q4 *= s;
 }
+
 
 struct quaternion q_add(struct quaternion quad_left, struct quaternion quad_right)
 {
@@ -405,6 +369,7 @@ struct quaternion q_add(struct quaternion quad_left, struct quaternion quad_righ
 
 	return result;
 }
+
 
 struct quaternion q_subtract(struct quaternion quad_left, struct quaternion quad_right)
 {
@@ -427,6 +392,7 @@ struct quaternion q_inverse(struct quaternion quad){
     return inverse;
 }
 
+
 void q_normalize(struct quaternion * quad)
 {
 	float length =  sqrt(pow(quad->q1,2) + pow(quad->q2,2) + pow(quad->q3,2) + pow(quad->q4,2));
@@ -437,4 +403,3 @@ void q_normalize(struct quaternion * quad)
 	quad->q4 /= length;
 
 }
-
