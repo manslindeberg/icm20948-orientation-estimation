@@ -218,7 +218,7 @@ uint8_t ICM_GyroConfig(SPI_HandleTypeDef*, uint16_t);
 uint8_t ICM_AccConfig(SPI_HandleTypeDef*,uint8_t);
 void ICM_Initialize(SPI_HandleTypeDef*, UART_HandleTypeDef*);
 void ICM_ReadGyroData(SPI_HandleTypeDef*, float*, float*);
-void ICM_ReadAccData(SPI_HandleTypeDef*,float*, float*);
+void ICM_ReadAccData(SPI_HandleTypeDef*,float*);
 void ICM_GyroCalibration(SPI_HandleTypeDef*,UART_HandleTypeDef*, float*);
 void ICM_AccCalibration(SPI_HandleTypeDef*,UART_HandleTypeDef*, float*);
 void ICM_SelectBank(SPI_HandleTypeDef*,uint8_t);

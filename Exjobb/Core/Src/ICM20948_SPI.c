@@ -270,7 +270,7 @@ void ICM_GyroCalibration(SPI_HandleTypeDef *hspi,UART_HandleTypeDef* huart, floa
 }
 
 
-
+/*
 void ICM_AccCalibration(SPI_HandleTypeDef *hspi, UART_HandleTypeDef* huart, float *acc_bias)
 {
 	char uart_buffer[200];
@@ -301,13 +301,12 @@ void ICM_AccCalibration(SPI_HandleTypeDef *hspi, UART_HandleTypeDef* huart, floa
 					acc_bias[0], acc_bias[1], acc_bias[2]);
 	HAL_UART_Transmit(huart, (uint8_t*)uart_buffer ,strlen(uart_buffer),1000);
 }
+**/
 
-/*
 void ICM_AccCalibration(SPI_HandleTypeDef *hspi, UART_HandleTypeDef* huart, float *acc_bias){
 
 	float acc_data[3] = {0,0,0};
 	float acc_angle[3] = {0,0,0};
-	char uart_buffer_test[200];
 	struct euler_angles temp = {0,0,0};
 
 	for (int16_t i = 0; i < 500; i++)
@@ -316,21 +315,15 @@ void ICM_AccCalibration(SPI_HandleTypeDef *hspi, UART_HandleTypeDef* huart, floa
 		CalcAccLinearToEuler(acc_data, &temp);
 		acc_angle[0] += temp.roll;
 		acc_angle[1] += temp.pitch;
-		HAL_Delay(20);
+		HAL_Delay(10);
 	}
 
-	acc_bias[0] =  -1*acc_angle[0] / 500.0;
-	acc_bias[1] =  -1*acc_angle[1] / 500.0;
-
-	sprintf(uart_buffer_test,
-					"\r\n Calibrating Accelerometer:"
-					"(Acc Roll: %.4f | Acc Pitch: %.4f)"
-					"\r\n",
-					acc_bias[0], acc_bias[1]);
-	HAL_UART_Transmit(huart, (uint8_t*)uart_buffer_test,strlen(uart_buffer_test),1000);
+	acc_bias[0] =  acc_angle[0] / 500.0;
+	acc_bias[1] =  acc_angle[1] / 500.0;
 
 }
-*/
+
+
 void ICM_ReadGyroData(SPI_HandleTypeDef *hspi, float* gyro_data, float *gyro_bias)
 {
 	uint8_t gyro_raw[6] = {0,0,0,0,0,0};
@@ -347,7 +340,7 @@ void ICM_ReadGyroData(SPI_HandleTypeDef *hspi, float* gyro_data, float *gyro_bia
 }
 
 
-void ICM_ReadAccData(SPI_HandleTypeDef *hspi, float* accel_data, float* accel_bias){
+void ICM_ReadAccData(SPI_HandleTypeDef *hspi, float* accel_data){
 
 	uint8_t acc_data[6] = {0,0,0,0,0,0};
 	int16_t acc_int[3] = {0,0,0};
@@ -357,9 +350,9 @@ void ICM_ReadAccData(SPI_HandleTypeDef *hspi, float* accel_data, float* accel_bi
 	UINT8_TO_INT16(acc_int[1],acc_data[2], acc_data[3]);
 	UINT8_TO_INT16(acc_int[2],acc_data[4], acc_data[5]);
 
-	accel_data[0] = ((float) acc_int[0] / acc_scale_factor + accel_bias[0]);
-	accel_data[1] = ((float) acc_int[1] / acc_scale_factor + accel_bias[1]);
-	accel_data[2] = ((float) acc_int[2] / acc_scale_factor + accel_bias[2]);
+	accel_data[0] = (float)acc_int[0] / acc_scale_factor;
+	accel_data[1] = (float)acc_int[1] / acc_scale_factor;
+	accel_data[2] = (float)acc_int[2] / acc_scale_factor;
 }
 
 /*configure accelerometer sensitivity and scaler**/

@@ -60,8 +60,8 @@ all: main-build
 main-build: Exjobb.elf secondary-outputs
 
 # Tool invocations
-Exjobb.elf: $(OBJS) $(USER_OBJS) C:\Users\mansl\Documents\icm20948-orientation-estimation\Exjobb\STM32G070RBTX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "Exjobb.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m0plus -T"C:\Users\mansl\Documents\icm20948-orientation-estimation\Exjobb\STM32G070RBTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="Exjobb.map" -Wl,--gc-sections -static --specs=nano.specs -mfloat-abi=soft -mthumb -u _printf_float -Wl,--start-group -lc -lm -Wl,--end-group
+Exjobb.elf: $(OBJS) $(USER_OBJS) C:\Users\ludvigha\Documents\icm20948-orientation-estimation\Exjobb\STM32G070RBTX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "Exjobb.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m0plus -T"C:\Users\ludvigha\Documents\icm20948-orientation-estimation\Exjobb\STM32G070RBTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="Exjobb.map" -Wl,--gc-sections -static --specs=nano.specs -mfloat-abi=soft -mthumb -u _printf_float -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 

@@ -31,6 +31,18 @@ struct cartesian_vector {
 	float z;
 };
 
+struct matrix {
+	float a11;
+	float a12;
+	float a13;
+	float a21;
+	float a22;
+	float a23;
+	float a31;
+	float a32;
+	float a33;
+};
+
 void CalcQuaternionToEuler(struct quaternion quat, struct euler_angles*);
 void CalcQuaternionToEuler2(struct quaternion quat, struct euler_angles *eu);
 void MahonyFilterXIO(float*, float*, struct quaternion*);
@@ -42,6 +54,8 @@ void CalcAccLinearToEuler(float* accel_data, struct euler_angles*);
 void GyroHighPassFilter(float*, float*, float*, float*, float);
 void GyroLowPassFilter(float *gyro_data, float* prev_filt, float* filt, float a);
 void MahonyFilter(float*, float*, struct quaternion *);
+void CalculateRotationMatrix(float*);
+void CalculateGyroInEarthFrame(float*, float*);
 
 struct quaternion q_multiplication(struct quaternion quad_left, struct quaternion quad_right);
 struct quaternion q_add(struct quaternion quad_left, struct quaternion quad_right);

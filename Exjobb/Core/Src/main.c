@@ -118,8 +118,10 @@ int main(void)
 
   	float accel_data[3] = {0,0,0};
   	float gyro_data[3] = {0,0,0};
+  	float gyro_data_earthframe[3] = {0,0,0};
   	static float gyro_bias[3] = {0,0,0};
   	static float accel_bias[3] = {0,0,0};
+
 
   	// High pass Filter Variables
 
@@ -137,7 +139,8 @@ int main(void)
 
   	HAL_TIM_Base_Start(&htim16);
   	uint16_t uart_timer_scaler = 0;
-
+  	ICM_AccCalibration(&hspi1,&huart2,accel_bias);
+  	CalculateRotationMatrix(accel_bias);
   	ICM_GyroCalibration(&hspi1,&huart2, gyro_bias);
   	//ICM_AccCalibration(&hspi1, &huart2, accel_bias);
 
@@ -156,10 +159,11 @@ int main(void)
 	  uart_timer_scaler = (uart_timer_scaler + 1) % 10; // every 10th
 
 	  ICM_ReadGyroData(&hspi1, gyro_data, gyro_bias);
-	  ICM_ReadAccData(&hspi1, accel_data, accel_bias);
+	  ICM_ReadAccData(&hspi1, accel_data);
+	  CalculateGyroInEarthFrame(gyro_data, gyro_data_earthframe);
 	  //GyroLowPassFilter(gyro_data, prev_low_pass_gyro, low_pass_gyro, low_alpha);
 	  //CalcGyroQuaternion(gyro_data, &quat);
-	  MadgwickFilterArduino(gyro_data, accel_data, &quat);
+	  MadgwickFilterArduino(gyro_data_earthframe, accel_data, &quat);
 
 	  if(uart_timer_scaler == 0)
 	  {
