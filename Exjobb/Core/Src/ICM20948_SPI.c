@@ -1,10 +1,24 @@
-/*
- * ICM20948.c
- *
- *  Created on: Feb 11, 2022
- *      Author: ludvigha
- */
+/* MIT License
 
+Copyright (c) 2022 Lindeberg, M & Hansson, L
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE. */
 
 #include "ICM20948_SPI.h"
 #include "main.h"
@@ -305,10 +319,12 @@ void ICM_AccCalibration(SPI_HandleTypeDef *hspi, UART_HandleTypeDef* huart, floa
 
 void ICM_AccCalibration(SPI_HandleTypeDef *hspi, UART_HandleTypeDef* huart, float *acc_bias){
 
+	char uart_buffer[200];
 	float acc_data[3] = {0,0,0};
-	float acc_angle[3] = {0,0,0};
+	float acc_angle[2] = {0,0};
 	struct euler_angles temp = {0,0,0};
 
+	ICM_SelectBank(hspi,USER_BANK_0);
 	for (int16_t i = 0; i < 500; i++)
 	{
 		ICM_ReadAccData(hspi, acc_data);
@@ -318,9 +334,17 @@ void ICM_AccCalibration(SPI_HandleTypeDef *hspi, UART_HandleTypeDef* huart, floa
 		HAL_Delay(10);
 	}
 
-	acc_bias[0] =  acc_angle[0] / 500.0;
-	acc_bias[1] =  acc_angle[1] / 500.0;
+	float temp1 =  (acc_angle[0] / 500.0);
+	float temp2 =  -(acc_angle[1] / 500.0);
 
+	acc_bias[0] = temp1;
+	acc_bias[1] = temp2;
+
+	sprintf(uart_buffer,
+		  "Accelerometer Calibration Succes: \r\n"
+		  "Pitch: %.3f, Roll: %.3f",
+		  temp1, temp2);
+	HAL_UART_Transmit(huart,(uint8_t*)uart_buffer, strlen(uart_buffer), 1000);
 }
 
 

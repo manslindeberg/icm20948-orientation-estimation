@@ -118,9 +118,9 @@ int main(void)
 
   	float accel_data[3] = {0,0,0};
   	float gyro_data[3] = {0,0,0};
-  	float gyro_data_earthframe[3] = {0,0,0};
-  	static float gyro_bias[3] = {0,0,0};
-  	static float accel_bias[3] = {0,0,0};
+  	float accel_data_earthframe[3] = {0,0,0};
+  	float gyro_bias[3] = {0,0,0};
+  	float accel_bias[2] = {0,0};
 
 
   	// High pass Filter Variables
@@ -131,6 +131,7 @@ int main(void)
 
   	struct quaternion quat = {1,0,0,0};
   	struct euler_angles angles = {0,0,0};
+  	struct matrix rotation_matrix = {0,0,0,0,0,0,0,0,0};
 
   	uint32_t samples = 0;
   	float duration_diff = 0;
@@ -140,9 +141,8 @@ int main(void)
   	HAL_TIM_Base_Start(&htim16);
   	uint16_t uart_timer_scaler = 0;
   	ICM_AccCalibration(&hspi1,&huart2,accel_bias);
-  	CalculateRotationMatrix(accel_bias);
+  	CalculateRotationMatrix(accel_bias, &rotation_matrix);
   	ICM_GyroCalibration(&hspi1,&huart2, gyro_bias);
-  	//ICM_AccCalibration(&hspi1, &huart2, accel_bias);
 
   	sprintf(uart_buffer, "UART_PREAMBLE\r\n");
   	HAL_UART_Transmit(&huart2,(uint8_t*)uart_buffer, strlen(uart_buffer), 1000);
@@ -160,10 +160,11 @@ int main(void)
 
 	  ICM_ReadGyroData(&hspi1, gyro_data, gyro_bias);
 	  ICM_ReadAccData(&hspi1, accel_data);
-	  CalculateGyroInEarthFrame(gyro_data, gyro_data_earthframe);
-	  //GyroLowPassFilter(gyro_data, prev_low_pass_gyro, low_pass_gyro, low_alpha);
+	  CalculateAccelerometerInEarthFrame(&rotation_matrix, accel_data, accel_data_earthframe);
+	  GyroLowPassFilter(gyro_data, prev_low_pass_gyro, low_pass_gyro, low_alpha);
+	  //CalcAccLinearToEuler(accel_data_earthframe, &angles);
 	  //CalcGyroQuaternion(gyro_data, &quat);
-	  MadgwickFilterArduino(gyro_data_earthframe, accel_data, &quat);
+	  MadgwickFilterArduino(low_pass_gyro, accel_data_earthframe, &quat);
 
 	  if(uart_timer_scaler == 0)
 	  {
@@ -177,8 +178,8 @@ int main(void)
 		 samples += 1;
 		 */
 		 sprintf(uart_buffer,
-		 		  "{'yaw':%.4f, 'pitch':%.4f, 'roll':%.4f}\r\n",
-		 		  angles.yaw, angles.pitch, angles.roll);
+		 		  "{'yaw':%.4f, 'pitch':%.4f, 'roll':%.4f, 'duration':%.4f}\r\n",
+		 		  angles.yaw, angles.pitch, angles.roll, duration);
 		 		 HAL_UART_Transmit(&huart2,(uint8_t*)uart_buffer, strlen(uart_buffer), 1000);
 	  }
 

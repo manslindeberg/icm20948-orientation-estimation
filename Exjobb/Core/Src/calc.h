@@ -76,8 +76,8 @@ void CalcAccLinearToEuler(float* accel_data, struct euler_angles*);
 void GyroHighPassFilter(float*, float*, float*, float*, float);
 void GyroLowPassFilter(float *gyro_data, float* prev_filt, float* filt, float a);
 void MahonyFilter(float*, float*, struct quaternion *);
-void CalculateRotationMatrix(float*);
-void CalculateGyroInEarthFrame(float*, float*);
+void CalculateRotationMatrix(float*, struct matrix *);
+void CalculateAccelerometerInEarthFrame(struct matrix *, float*, float*);
 
 struct quaternion q_multiplication(struct quaternion quad_left, struct quaternion quad_right);
 struct quaternion q_add(struct quaternion quad_left, struct quaternion quad_right);

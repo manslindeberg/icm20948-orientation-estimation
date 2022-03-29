@@ -1,3 +1,25 @@
+/* MIT License
+
+Copyright (c) 2022 Lindeberg, M & Hansson, L
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE. */
+
 #include <math.h>
 #include "main.h"
 #include "calc.h"
@@ -10,10 +32,9 @@ static float k_i = 0.5;
 static float k_p = 0.2;
 float eInt[3] = {0,0,0};
 float i[3] = {0,0,0};
-struct matrix RotationMatrix;
 
 /*Madgwick Filter Parameters */
-static float Beta = 0.1;
+static float Beta = 0.115;
 
 void CalcQuaternionToEuler(struct quaternion quat, struct euler_angles* eu)
 {
@@ -439,41 +460,41 @@ void q_normalize(struct quaternion * quad)
 
 }
 
-void CalculateRotationMatrix(float* acc_biaz){
+void CalculateRotationMatrix(float* acc_bias, struct matrix *RotationMatrix){
 	struct matrix Roll;
 	struct matrix Pitch;
 	struct matrix Yaw;
 	struct matrix YawTimesPitch;
 
-	Roll.a11 = 1;
-	Roll.a12 = 0;
-	Roll.a13 = 0;
-	Roll.a21 = 0;
-	Roll.a22= cos(acc_biaz[0]);
-	Roll.a23 = -sin(acc_biaz[0]);
-	Roll.a31 = 0;
-	Roll.a32 = sin(acc_biaz[0]);
-	Roll.a33 = cos(acc_biaz[0]);
+	Roll.a11 = 1.0;
+	Roll.a12 = 0.0;
+	Roll.a13 = 0.0;
+	Roll.a21 = 0.0;
+	Roll.a22= cos(acc_bias[0]*DEG_2_RAD);
+	Roll.a23 = -sin(acc_bias[0]*DEG_2_RAD);
+	Roll.a31 = 0.0;
+	Roll.a32 = sin(acc_bias[0]*DEG_2_RAD);
+	Roll.a33 = cos(acc_bias[0]*DEG_2_RAD);
 
-	Pitch.a11 = cos(acc_biaz[1]);
-	Pitch.a12 = 0;
-	Pitch.a13 = sin(acc_biaz[1]);
-	Pitch.a21 = 0;
-	Pitch.a22 = 1;
-	Pitch.a23 = 0;
-	Pitch.a31 = -sin(acc_biaz[1]);
-	Pitch.a32 = 0;
-	Pitch.a33 = cos(acc_biaz[1]);
+	Pitch.a11 = cos(acc_bias[1]*DEG_2_RAD);
+	Pitch.a12 = 0.0;
+	Pitch.a13 = sin(acc_bias[1]*DEG_2_RAD);
+	Pitch.a21 = 0.0;
+	Pitch.a22 = 1.0;
+	Pitch.a23 = 0.0;
+	Pitch.a31 = -sin(acc_bias[1]*DEG_2_RAD);
+	Pitch.a32 = 0.0;
+	Pitch.a33 = cos(acc_bias[1]*DEG_2_RAD);
 
-	Yaw.a11 = 1;
-	Yaw.a12 = 0;
-	Yaw.a13 = 0;
-	Yaw.a21 = 0;
-	Yaw.a22 = 1;
-	Yaw.a23 = 0;
-	Yaw.a31 = 0;
-	Yaw.a32 = 0;
-	Yaw.a33 = 1;
+	Yaw.a11 = 1.0;
+	Yaw.a12 = 0.0;
+	Yaw.a13 = 0.0;
+	Yaw.a21 = 0.0;
+	Yaw.a22 = 1.0;
+	Yaw.a23 = 0.0;
+	Yaw.a31 = 0.0;
+	Yaw.a32 = 0.0;
+	Yaw.a33 = 1.0;
 
 	YawTimesPitch.a11 = Yaw.a11*Pitch.a11 + Yaw.a12*Pitch.a21 + Yaw.a13*Pitch.a31;
 	YawTimesPitch.a12 = Yaw.a11*Pitch.a12 + Yaw.a12*Pitch.a22 + Yaw.a13*Pitch.a32;
@@ -485,23 +506,25 @@ void CalculateRotationMatrix(float* acc_biaz){
 	YawTimesPitch.a32 = Yaw.a31*Pitch.a12 + Yaw.a32*Pitch.a22 + Yaw.a33*Pitch.a32;
 	YawTimesPitch.a33 = Yaw.a31*Pitch.a13 + Yaw.a32*Pitch.a23 + Yaw.a33*Pitch.a33;
 
-	RotationMatrix.a11 = YawTimesPitch.a11*Roll.a11 + YawTimesPitch.a12*Roll.a21 + YawTimesPitch.a13*Roll.a31;
-	RotationMatrix.a12 = YawTimesPitch.a11*Roll.a12 + YawTimesPitch.a12*Roll.a22 + YawTimesPitch.a13*Roll.a32;
-	RotationMatrix.a13 = YawTimesPitch.a11*Roll.a13 + YawTimesPitch.a12*Roll.a23 + YawTimesPitch.a13*Roll.a33;
-	RotationMatrix.a21 = YawTimesPitch.a21*Roll.a11 + YawTimesPitch.a22*Roll.a21 + YawTimesPitch.a23*Roll.a31;
-	RotationMatrix.a22 = YawTimesPitch.a21*Roll.a12 + YawTimesPitch.a22*Roll.a22 + YawTimesPitch.a23*Roll.a32;
-	RotationMatrix.a23 = YawTimesPitch.a21*Roll.a13 + YawTimesPitch.a22*Roll.a23 + YawTimesPitch.a23*Roll.a33;
-	RotationMatrix.a31 = YawTimesPitch.a31*Roll.a11 + YawTimesPitch.a32*Roll.a21 + YawTimesPitch.a33*Roll.a31;
-	RotationMatrix.a32 = YawTimesPitch.a31*Roll.a12 + YawTimesPitch.a32*Roll.a22 + YawTimesPitch.a33*Roll.a32;
-	RotationMatrix.a33 = YawTimesPitch.a31*Roll.a13 + YawTimesPitch.a32*Roll.a23 + YawTimesPitch.a33*Roll.a33;
-
+	RotationMatrix->a11 = YawTimesPitch.a11*Roll.a11 + YawTimesPitch.a12*Roll.a21 + YawTimesPitch.a13*Roll.a31;
+	RotationMatrix->a12 = YawTimesPitch.a11*Roll.a12 + YawTimesPitch.a12*Roll.a22 + YawTimesPitch.a13*Roll.a32;
+	RotationMatrix->a13 = YawTimesPitch.a11*Roll.a13 + YawTimesPitch.a12*Roll.a23 + YawTimesPitch.a13*Roll.a33;
+	RotationMatrix->a21 = YawTimesPitch.a21*Roll.a11 + YawTimesPitch.a22*Roll.a21 + YawTimesPitch.a23*Roll.a31;
+	RotationMatrix->a22 = YawTimesPitch.a21*Roll.a12 + YawTimesPitch.a22*Roll.a22 + YawTimesPitch.a23*Roll.a32;
+	RotationMatrix->a23 = YawTimesPitch.a21*Roll.a13 + YawTimesPitch.a22*Roll.a23 + YawTimesPitch.a23*Roll.a33;
+	RotationMatrix->a31 = YawTimesPitch.a31*Roll.a11 + YawTimesPitch.a32*Roll.a21 + YawTimesPitch.a33*Roll.a31;
+	RotationMatrix->a32 = YawTimesPitch.a31*Roll.a12 + YawTimesPitch.a32*Roll.a22 + YawTimesPitch.a33*Roll.a32;
+	RotationMatrix->a33 = YawTimesPitch.a31*Roll.a13 + YawTimesPitch.a32*Roll.a23 + YawTimesPitch.a33*Roll.a33;
 }
 
-void CalculateGyroInEarthFrame(float* gyro_data, float* new_data){
+void CalculateAccelerometerInEarthFrame(struct matrix *RotationMatrix, float* accel_data, float* new_data){
+	new_data[0] = accel_data[0]*RotationMatrix->a11 + accel_data[1]*RotationMatrix->a12 + accel_data[2]*RotationMatrix->a13;
+	new_data[1] = accel_data[0]*RotationMatrix->a21 + accel_data[1]*RotationMatrix->a22 + accel_data[2]*RotationMatrix->a23;
+	new_data[2] = accel_data[0]*RotationMatrix->a31 + accel_data[1]*RotationMatrix->a32 + accel_data[2]*RotationMatrix->a33;
 
-	new_data[0] = gyro_data[0]*RotationMatrix.a11 + gyro_data[1]*RotationMatrix.a12 + gyro_data[2]*RotationMatrix.a13;
-	new_data[1] = gyro_data[0]*RotationMatrix.a21 + gyro_data[1]*RotationMatrix.a22 + gyro_data[2]*RotationMatrix.a23;
-	new_data[2] = gyro_data[0]*RotationMatrix.a31 + gyro_data[1]*RotationMatrix.a32 + gyro_data[2]*RotationMatrix.a33;
-
-
+	float norm = 1.0 / sqrt(new_data[0]*new_data[0] + new_data[1]*new_data[1] + new_data[2]*new_data[2]);
+	new_data[0] *= norm;
+	new_data[1] *= norm;
+	new_data[2] *= norm;
 }
+
