@@ -125,7 +125,7 @@ int main(void)
 
   	float low_pass_gyro[3] = {0,0,0};
   	float prev_low_pass_gyro[3] = {0,0,0};
-  	float low_alpha = 0.3;
+  	float low_alpha = 0.2;
 
   	struct quaternion quat = {1,0,0,0};
   	struct euler_angles angles = {0,0,0};
@@ -159,7 +159,7 @@ int main(void)
 	  ICM_ReadAccData(&hspi1, accel_data, accel_bias);
 	  //GyroLowPassFilter(gyro_data, prev_low_pass_gyro, low_pass_gyro, low_alpha);
 	  //CalcGyroQuaternion(gyro_data, &quat);
-	  MahonyFilter(gyro_data, accel_data, &quat);
+	  MadgwickFilterArduino(gyro_data, accel_data, &quat);
 
 	  if(uart_timer_scaler == 0)
 	  {

@@ -6,17 +6,17 @@
 #include "ICM20948_SPI.h"
 
 /* Mahony Filter Parameters */
-static float k_i = 1.1;
-static float k_p = 0.4;
+static float k_i = 0.5;
+static float k_p = 0.2;
 float eInt[3] = {0,0,0};
-//float i[3] = {0,0,0};
+float i[3] = {0,0,0};
 
 /*Madgwick Filter Parameters */
 static float Beta = 0.1;
 
 void CalcQuaternionToEuler(struct quaternion quat, struct euler_angles* eu)
 {
-	eu->roll = 90 - atan2((quat.q1*quat.q2 + quat.q3*quat.q4), 0.5 - (quat.q2*quat.q2 + quat.q3*quat.q3))*RAD_2_DEG;
+	eu->roll = 90 - atan2((quat.q1*quat.q2 + quat.q3*quat.q4) 0.5 - (quat.q2*quat.q2 + quat.q3*quat.q3))*RAD_2_DEG;
 	eu->pitch = asin(2.0*(quat.q1*quat.q3 - quat.q2*quat.q4))*RAD_2_DEG;
 	eu->yaw = -atan2((quat.q2*quat.q3 + quat.q1*quat.q4), 0.5 - (quat.q3*quat.q3 + quat.q4*quat.q4))*RAD_2_DEG;
 }
@@ -102,7 +102,10 @@ void MahonyFilter(float *gyro_data, float* accel_data, struct quaternion *q)
 	float gyro_temp[3];
 	float v[3] = {0,0,0};	//corrected frame vector
 	float e[3] = {0,0,0};	//error estimate vector
-	float i[3] = {0,0,0};
+
+	gyro_data[0] *= DEG_2_RAD;
+	gyro_data[1] *= DEG_2_RAD;
+	gyro_data[2] *= DEG_2_RAD;
 
 	accelLength = sqrt(accel_data[0]*accel_data[0] + accel_data[1]*accel_data[1] + accel_data[2]*accel_data[2]);
 
@@ -142,7 +145,7 @@ void MahonyFilterXIO(float *gyro_data, float *accel_data, struct quaternion *q)
 	float q1 = q->q1, q2 = q->q2, q3 = q->q3, q4 = q->q4;   // short name local variable for readability
 	float norm;
 	float ax = accel_data[0], ay = accel_data[1], az = accel_data[2];
-	float gx = gyro_data[0], gy = gyro_data[1], gz = gyro_data[2];
+	float gx = gyro_data[0]*DEG_2_RAD, gy = gyro_data[1]*DEG_2_RAD, gz = gyro_data[2]*DEG_2_RAD;
 	float vx, vy, vz;
 	float ex, ey, ez;
 	float pa, pb, pc;
@@ -206,7 +209,7 @@ void MadgwickFilterXIO(float *gyro_data, float *accel_data, struct quaternion *q
 {
 	float q1 = q->q1, q2 = q->q2, q3 = q->q3, q4 = q->q4;   // short name local variable for readability
 	float ax = accel_data[0], ay = accel_data[1], az = accel_data[2];
-	float gx = gyro_data[0], gy = gyro_data[1], gz = gyro_data[2];
+	float gx = gyro_data[0]*DEG_2_RAD, gy = gyro_data[1]*DEG_2_RAD, gz = gyro_data[2]*DEG_2_RAD;
 	float norm;
 	float s1, s2, s3, s4;
 	float qDot1, qDot2, qDot3, qDot4;
@@ -270,12 +273,8 @@ void MadgwickFilterArduino(float *gyro_data, float *accel_data, struct quaternio
 	float s0, s1, s2, s3;
 	float qDot1, qDot2, qDot3, qDot4;
 	float _2q0, _2q1, _2q2, _2q3, _4q0, _4q1, _4q2 ,_8q1, _8q2, q0q0, q1q1, q2q2, q3q3;
-	float gx = gyro_data[0];
-	float gy = gyro_data[1];
-	float gz = gyro_data[2];
-	float ax = accel_data[0];
-	float ay = accel_data[1];
-	float az = accel_data[2];
+	float ax = accel_data[0], ay = accel_data[1], az = accel_data[2];
+	float gx = gyro_data[0]*DEG_2_RAD, gy = gyro_data[1]*DEG_2_RAD, gz = gyro_data[2]*DEG_2_RAD;
 	float q0 = q->q1;
 	float q1 = q->q2;
 	float q2 = q->q3;

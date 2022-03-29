@@ -263,7 +263,7 @@ void ICM_GyroCalibration(SPI_HandleTypeDef *hspi,UART_HandleTypeDef* huart, floa
 
 	sprintf(uart_buffer,
 					"\r\n Calibrating Gyroscope:"
-					"(Gyro x-offset: %.4f | Gyro y-offset: %.4f | Gyro z-offset: %.4f)"
+					"(Gyro x-offset: %.5f | Gyro y-offset: %.5f | Gyro z-offset: %.5f)"
 					"\r\n",
 					gyro_bias[0], gyro_bias[1], gyro_bias[2]);
 	HAL_UART_Transmit(huart, (uint8_t*) uart_buffer ,strlen(uart_buffer),1000);
@@ -341,9 +341,9 @@ void ICM_ReadGyroData(SPI_HandleTypeDef *hspi, float* gyro_data, float *gyro_bia
 	UINT8_TO_INT16(gyro_int[1], gyro_raw[2], gyro_raw[3]);
 	UINT8_TO_INT16(gyro_int[2], gyro_raw[4], gyro_raw[5]);
 
-	gyro_data[0] = (((float) gyro_int[0]  / g_gyro_scale_factor) + gyro_bias[0])*DEG_2_RAD;
-	gyro_data[1] = (((float) gyro_int[1]  / g_gyro_scale_factor) + gyro_bias[1])*DEG_2_RAD;
-	gyro_data[2] = (((float) gyro_int[2]  / g_gyro_scale_factor) + gyro_bias[2])*DEG_2_RAD;
+	gyro_data[0] = (((float) gyro_int[0]  / g_gyro_scale_factor) + gyro_bias[0]);
+	gyro_data[1] = (((float) gyro_int[1]  / g_gyro_scale_factor) + gyro_bias[1]);
+	gyro_data[2] = (((float) gyro_int[2]  / g_gyro_scale_factor) + gyro_bias[2]);
 }
 
 
