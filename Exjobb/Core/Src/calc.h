@@ -7,7 +7,7 @@
 
 #define GYRO_THRESHOLD_250 (2*0.0076*DEG_2_RAD)
 #define GYRO_THRESHOLD_500 (2*0.0153*DEG_2_RAD)
-#define GYRO_THRESHOLD_1000 (5.0*0.0305*DEG_2_RAD)
+#define GYRO_THRESHOLD_1000 (10*0.0305*DEG_2_RAD)
 #define GYRO_THRESHOLD_2000 (2*0.0608*DEG_2_RAD)
 #define GYRO_THRESHOLD (GYRO_THRESHOLD_1000)
 
@@ -33,6 +33,9 @@ struct cartesian_vector {
 
 void CalcQuaternionToEuler(struct quaternion quat, struct euler_angles*);
 void CalcQuaternionToEuler2(struct quaternion quat, struct euler_angles *eu);
+void MahonyFilterXIO(float*, float*, struct quaternion*);
+void MadgwickFilterXIO(float *, float*, struct quaternion *);
+void MadgwickFilterArduino(float *, float*, struct quaternion *);
 void CalcGyroQuaternion(float* gyro_data, struct quaternion*);
 void CalcGyroEuler(float *gyro_data, struct euler_angles*);
 void CalcAccLinearToEuler(float* accel_data, struct euler_angles*);

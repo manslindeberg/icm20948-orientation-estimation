@@ -130,7 +130,7 @@ int main(void)
   	struct quaternion quat = {1,0,0,0};
   	struct euler_angles angles = {0,0,0};
 
-  	uint32_t timer_currentval = 0;
+  	uint32_t samples = 0;
   	float duration_diff = 0;
   	float duration = 0;
   	float clock = 16000000/16.0;
@@ -139,7 +139,7 @@ int main(void)
   	uint16_t uart_timer_scaler = 0;
 
   	ICM_GyroCalibration(&hspi1,&huart2, gyro_bias);
-  	ICM_AccCalibration(&hspi1, &huart2, accel_bias);
+  	//ICM_AccCalibration(&hspi1, &huart2, accel_bias);
 
   	sprintf(uart_buffer, "UART_PREAMBLE\r\n");
   	HAL_UART_Transmit(&huart2,(uint8_t*)uart_buffer, strlen(uart_buffer), 1000);
@@ -152,29 +152,39 @@ int main(void)
 
   while (1)
   {
-	  	  __HAL_TIM_SET_COUNTER(&htim16, 0);
-	   	  uart_timer_scaler = (uart_timer_scaler + 1) % 10; // every 10th
-	   	  ICM_ReadGyroData(&hspi1, gyro_data, gyro_bias);
-	   	  ICM_ReadAccData(&hspi1, accel_data, accel_bias);
-	   	  GyroLowPassFilter(gyro_data, prev_low_pass_gyro, low_pass_gyro, low_alpha);
-	   	  MahonyFilter(low_pass_gyro, accel_data, &quat);
+	  __HAL_TIM_SET_COUNTER(&htim16,0);
+	  uart_timer_scaler = (uart_timer_scaler + 1) % 10; // every 10th
 
-	   	  if(uart_timer_scaler == 0)
-	   	  {
-	   		 CalcQuaternionToEuler(quat, &angles);
-	   		 sprintf(uart_buffer,
-	   		  "{'yaw':%.5f, 'pitch':%.5f, 'roll':%.5f, duration : %.3f}\r\n",
-	   		  accel_data[0], accel_data[1], accel_data[2], duration);
-	   		 HAL_UART_Transmit(&huart2,(uint8_t*)uart_buffer, strlen(uart_buffer), 1000);
-	   	  }
+	  ICM_ReadGyroData(&hspi1, gyro_data, gyro_bias);
+	  ICM_ReadAccData(&hspi1, accel_data, accel_bias);
+	  //GyroLowPassFilter(gyro_data, prev_low_pass_gyro, low_pass_gyro, low_alpha);
+	  //CalcGyroQuaternion(gyro_data, &quat);
+	  MahonyFilter(gyro_data, accel_data, &quat);
 
-	   	  timer_currentval = __HAL_TIM_GET_COUNTER(&htim16);
-	   	  duration = (timer_currentval )*1000/clock;
-	   	  duration_diff = SAMPLE_TIME_ICM - duration;
+	  if(uart_timer_scaler == 0)
+	  {
 
-	   	  if(duration_diff > 0){
-	   		  HAL_Delay(duration_diff);
-	   	  }
+		 CalcQuaternionToEuler(quat, &angles);
+		 /*sprintf(uart_buffer,
+		  "{'ax':%.4f, 'ay':%.4f, 'az':%.4f, 'gx':%.4f, 'gy':%.4f, 'gz':%.4f}\r\n",
+		  accel_data[0], accel_data[1], accel_data[2],
+		  gyro_data[0], gyro_data[1], gyro_data[2]);
+		 HAL_UART_Transmit(&huart2,(uint8_t*)uart_buffer, strlen(uart_buffer), 1000);
+		 samples += 1;
+		 */
+		 sprintf(uart_buffer,
+		 		  "{'yaw':%.4f, 'pitch':%.4f, 'roll':%.4f}\r\n",
+		 		  angles.yaw, angles.pitch, angles.roll);
+		 		 HAL_UART_Transmit(&huart2,(uint8_t*)uart_buffer, strlen(uart_buffer), 1000);
+	  }
+
+	  duration = (__HAL_TIM_GET_COUNTER(&htim16))*1000.0/clock;
+	  duration_diff = SAMPLE_TIME_ICM - duration;
+
+	  if(duration_diff > 0)
+	  {
+		  HAL_Delay(duration_diff);
+	  }
 
     /* USER CODE END WHILE */
 
