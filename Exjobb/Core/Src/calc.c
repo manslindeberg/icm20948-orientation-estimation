@@ -6,10 +6,10 @@
 #include "ICM20948_SPI.h"
 
 /* Mahony Filter Parameters */
-static float k_i = 0.5;
-static float k_p = 0.2;
+static float k_i = 1.1;
+static float k_p = 0.4;
 float eInt[3] = {0,0,0};
-float i[3] = {0,0,0};
+//float i[3] = {0,0,0};
 
 /*Madgwick Filter Parameters */
 static float Beta = 0.1;
@@ -102,6 +102,7 @@ void MahonyFilter(float *gyro_data, float* accel_data, struct quaternion *q)
 	float gyro_temp[3];
 	float v[3] = {0,0,0};	//corrected frame vector
 	float e[3] = {0,0,0};	//error estimate vector
+	float i[3] = {0,0,0};
 
 	accelLength = sqrt(accel_data[0]*accel_data[0] + accel_data[1]*accel_data[1] + accel_data[2]*accel_data[2]);
 
