@@ -503,5 +503,9 @@ void CalculateGyroInEarthFrame(float* gyro_data, float* new_data){
 	new_data[1] = gyro_data[0]*RotationMatrix.a21 + gyro_data[1]*RotationMatrix.a22 + gyro_data[2]*RotationMatrix.a23;
 	new_data[2] = gyro_data[0]*RotationMatrix.a31 + gyro_data[1]*RotationMatrix.a32 + gyro_data[2]*RotationMatrix.a33;
 
+	float length = sqrt(pow(new_data[0],2) + pow(new_data[1],2) + pow(new_data[2],2));
+	new_data[0] = new_data[0] / length;
+	new_data[1] = new_data[1] / length;
+	new_data[2] = new_data[2] / length;
 
 }

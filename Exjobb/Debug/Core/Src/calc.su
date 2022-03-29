@@ -16,4 +16,4 @@ calc.c:410:19:q_subtract	40	static
 calc.c:422:19:q_inverse	40	static
 calc.c:431:6:q_normalize	32	static
 calc.c:442:6:CalculateRotationMatrix	176	static
-calc.c:500:6:CalculateGyroInEarthFrame	24	static
+calc.c:500:6:CalculateGyroInEarthFrame	32	static
