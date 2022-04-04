@@ -28,17 +28,17 @@ SOFTWARE. */
 #include "ICM20948_SPI.h"
 
 /* Mahony Filter Parameters */
-static float k_i = 0.5;
-static float k_p = 0.2;
+static float k_i = 1.1;
+static float k_p = 0.4;
 float eInt[3] = {0,0,0};
 float i[3] = {0,0,0};
 
 /*Madgwick Filter Parameters */
-static float Beta = 0.115;
+static float Beta = 0.1;
 
 void CalcQuaternionToEuler(struct quaternion quat, struct euler_angles* eu)
 {
-	eu->roll = 90 - atan2((quat.q1*quat.q2 + quat.q3*quat.q4),0.5 - (quat.q2*quat.q2 + quat.q3*quat.q3))*RAD_2_DEG;
+	eu->roll = atan2((quat.q1*quat.q2 + quat.q3*quat.q4),0.5 - (quat.q2*quat.q2 + quat.q3*quat.q3))*RAD_2_DEG;
 	eu->pitch = asin(2.0*(quat.q1*quat.q3 - quat.q2*quat.q4))*RAD_2_DEG;
 	eu->yaw = -atan2((quat.q2*quat.q3 + quat.q1*quat.q4), 0.5 - (quat.q3*quat.q3 + quat.q4*quat.q4))*RAD_2_DEG;
 }
@@ -72,6 +72,43 @@ void CalcQuaternionToEuler2(struct quaternion quat, struct euler_angles *eu)
 	}
 }
 
+void CalcAngleDifference(struct euler_angles *diff, struct euler_angles *a, struct euler_angles *b, struct euler_angles *add_on)
+{
+	diff->yaw = (a->yaw - b->yaw);
+	diff->pitch = (a->pitch - b->pitch);
+	diff->roll = (a->roll - b->roll);
+
+	if (diff->yaw > 180.0)
+	{
+		diff->yaw = 360.0 - diff->yaw;
+	}
+
+	if (diff->yaw < -180.0)
+	{
+		diff->yaw = -(diff->yaw + 360.0);
+	}
+
+	if (diff->pitch > 180.0)
+	{
+		diff->pitch = 360.0 - diff->pitch;
+	}
+
+	if (diff->pitch < -180.0)
+	{
+		diff->pitch = -(diff->pitch + 360.0);
+	}
+
+	if (diff->roll > 180.0)
+	{
+		diff->roll = 360.0 - diff->roll;
+	}
+
+	if (diff->roll < -180.0)
+	{
+		diff->roll = -(diff->roll + 360.0);
+	}
+
+}
 
 void CalcGyroEuler(float *gyro_data, struct euler_angles* eu_gyro_est)
 {
@@ -124,6 +161,7 @@ void MahonyFilter(float *gyro_data, float* accel_data, struct quaternion *q)
 	float gyro_temp[3];
 	float v[3] = {0,0,0};	//corrected frame vector
 	float e[3] = {0,0,0};	//error estimate vector
+	float i[3] = {0,0,0};
 
 	gyro_data[0] *= DEG_2_RAD;
 	gyro_data[1] *= DEG_2_RAD;

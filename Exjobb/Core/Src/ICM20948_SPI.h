@@ -42,7 +42,7 @@ extern float magnet_offset;
 #define MAG_READ 	(0x80)
 #define MAG_WRITE	(0x00)
 
-#define SAMPLE_TIME_ICM (20)
+#define SAMPLE_TIME_ICM (30)
 #define MOVING_AVERAGE_SIZE (25)
 
 #define USER_BANK_SEL 0x7F
@@ -229,24 +229,23 @@ extern float magnet_offset;
 
 #define MAG_SCALE_FACTOR (6.667752)
 
-uint8_t ICM_WHOAMI(SPI_HandleTypeDef*);
-uint8_t ICM_GyroConfig(SPI_HandleTypeDef*, uint16_t);
-uint8_t ICM_AccConfig(SPI_HandleTypeDef*,uint8_t);
-void ICM_Initialize(SPI_HandleTypeDef*, UART_HandleTypeDef*);
-void ICM_ReadGyroData(SPI_HandleTypeDef*, float*, float*);
-void ICM_ReadAccData(SPI_HandleTypeDef*,float*);
-void ICM_GyroCalibration(SPI_HandleTypeDef*,UART_HandleTypeDef*, float*);
-void ICM_AccCalibration(SPI_HandleTypeDef*,UART_HandleTypeDef*, float*);
-void ICM_SelectBank(SPI_HandleTypeDef*,uint8_t);
-void ICM_ReadMagData(SPI_HandleTypeDef*, float*, uint8_t, uint8_t, uint8_t);
-void ICM_MagPanCalibration(SPI_HandleTypeDef *hspi, UART_HandleTypeDef* huart);
-uint8_t ICM_MagRead(SPI_HandleTypeDef*,uint8_t);
-void ICM_MagWrite(SPI_HandleTypeDef*,uint8_t,uint8_t);
-void ICM_MagConfig(SPI_HandleTypeDef *, UART_HandleTypeDef*);
-void ICM_MagReadMulti(SPI_HandleTypeDef*, uint8_t, uint8_t*, uint8_t);
-void ICM_EnableMagRead(SPI_HandleTypeDef *hspi, uint8_t reg, uint8_t len);
-
-void ICM_CSHigh(void);
-void ICM_CSLow(void);
+uint8_t ICM_WHOAMI(SPI_HandleTypeDef*, uint8_t);
+uint8_t ICM_GyroConfig(SPI_HandleTypeDef*, uint16_t, uint8_t);
+uint8_t ICM_AccConfig(SPI_HandleTypeDef*,uint8_t, uint8_t);
+void ICM_Initialize(SPI_HandleTypeDef*, UART_HandleTypeDef*, uint8_t);
+void ICM_ReadGyroData(SPI_HandleTypeDef*, float*, float*, uint8_t);
+void ICM_ReadAccData(SPI_HandleTypeDef*,float*, uint8_t);
+void ICM_GyroCalibration(SPI_HandleTypeDef*,UART_HandleTypeDef*, float*, uint8_t);
+void ICM_AccCalibration(SPI_HandleTypeDef*,UART_HandleTypeDef*, float*, uint8_t);
+void ICM_SelectBank(SPI_HandleTypeDef*,uint8_t, uint8_t);
+void ICM_ReadMagData(SPI_HandleTypeDef*, float*, uint8_t, uint8_t, uint8_t, uint8_t);
+void ICM_MagPanCalibration(SPI_HandleTypeDef *hspi, UART_HandleTypeDef* huart, uint8_t);
+uint8_t ICM_MagRead(SPI_HandleTypeDef*,uint8_t, uint8_t);
+void ICM_MagWrite(SPI_HandleTypeDef*,uint8_t,uint8_t, uint8_t);
+void ICM_MagConfig(SPI_HandleTypeDef *, UART_HandleTypeDef*, uint8_t);
+void ICM_MagReadMulti(SPI_HandleTypeDef*, uint8_t, uint8_t*, uint8_t, uint8_t);
+void ICM_EnableMagRead(SPI_HandleTypeDef *hspi, uint8_t reg, uint8_t len, uint8_t);
+void ICM_CS_High(uint8_t);
+void ICM_CS_Low(uint8_t);
 
 #endif /* SRC_ICM20948_SPI_H_ */

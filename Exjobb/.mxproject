@@ -9,17 +9,17 @@ CDefines=USE_HAL_DRIVER;STM32G070xx;USE_HAL_DRIVER;USE_HAL_DRIVER;
 [PreviousGenFiles]
 AdvancedFolderStructure=true
 HeaderFileListSize=3
-HeaderFiles#0=C:/Users/mansl/OneDrive - Axis Communications AB/Master Thesis - IMU PTZ/workspace_1.8 (2) (1).0/Exjobb/Core/Inc/stm32g0xx_it.h
-HeaderFiles#1=C:/Users/mansl/OneDrive - Axis Communications AB/Master Thesis - IMU PTZ/workspace_1.8 (2) (1).0/Exjobb/Core/Inc/stm32g0xx_hal_conf.h
-HeaderFiles#2=C:/Users/mansl/OneDrive - Axis Communications AB/Master Thesis - IMU PTZ/workspace_1.8 (2) (1).0/Exjobb/Core/Inc/main.h
+HeaderFiles#0=C:/Users/mansl/Documents/icm20948-orientation-estimation/Exjobb/Core/Inc/stm32g0xx_it.h
+HeaderFiles#1=C:/Users/mansl/Documents/icm20948-orientation-estimation/Exjobb/Core/Inc/stm32g0xx_hal_conf.h
+HeaderFiles#2=C:/Users/mansl/Documents/icm20948-orientation-estimation/Exjobb/Core/Inc/main.h
 HeaderFolderListSize=1
-HeaderPath#0=C:/Users/mansl/OneDrive - Axis Communications AB/Master Thesis - IMU PTZ/workspace_1.8 (2) (1).0/Exjobb/Core/Inc
+HeaderPath#0=C:/Users/mansl/Documents/icm20948-orientation-estimation/Exjobb/Core/Inc
 HeaderFiles=;
 SourceFileListSize=3
-SourceFiles#0=C:/Users/mansl/OneDrive - Axis Communications AB/Master Thesis - IMU PTZ/workspace_1.8 (2) (1).0/Exjobb/Core/Src/stm32g0xx_it.c
-SourceFiles#1=C:/Users/mansl/OneDrive - Axis Communications AB/Master Thesis - IMU PTZ/workspace_1.8 (2) (1).0/Exjobb/Core/Src/stm32g0xx_hal_msp.c
-SourceFiles#2=C:/Users/mansl/OneDrive - Axis Communications AB/Master Thesis - IMU PTZ/workspace_1.8 (2) (1).0/Exjobb/Core/Src/main.c
+SourceFiles#0=C:/Users/mansl/Documents/icm20948-orientation-estimation/Exjobb/Core/Src/stm32g0xx_it.c
+SourceFiles#1=C:/Users/mansl/Documents/icm20948-orientation-estimation/Exjobb/Core/Src/stm32g0xx_hal_msp.c
+SourceFiles#2=C:/Users/mansl/Documents/icm20948-orientation-estimation/Exjobb/Core/Src/main.c
 SourceFolderListSize=1
-SourcePath#0=C:/Users/mansl/OneDrive - Axis Communications AB/Master Thesis - IMU PTZ/workspace_1.8 (2) (1).0/Exjobb/Core/Src
+SourcePath#0=C:/Users/mansl/Documents/icm20948-orientation-estimation/Exjobb/Core/Src
 SourceFiles=;
 
