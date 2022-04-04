@@ -1,5 +1,6 @@
 "./Core/Src/ICM20948_SPI.o"
 "./Core/Src/calc.o"
+"./Core/Src/interpolation.o"
 "./Core/Src/main.o"
 "./Core/Src/stm32g0xx_hal_msp.o"
 "./Core/Src/stm32g0xx_it.o"

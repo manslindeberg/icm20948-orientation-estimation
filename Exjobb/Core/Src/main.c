@@ -184,18 +184,27 @@ int main(void)
 		}
 	}
 
-	uart_prescaler = (uart_prescaler + 1) % 100;
+	uart_prescaler = (uart_prescaler + 1) % 50;
 
 	ICM_ReadGyroData(&hspi1, gyro_data, gyro_bias, IMU_MOVABLE);
 	ICM_ReadAccData(&hspi1, accel_data, IMU_MOVABLE);
 
-	/* Low-pass Filter Gyroscope & Acceleration */
+	// Low-pass Filter Gyroscope & Acceleration
 	GyroLowPassFilter(gyro_data, prev_low_pass_gyro, low_pass_gyro, low_alpha);
 	GyroLowPassFilter(accel_data, prev_low_pass_accel, low_pass_accel, low_alpha_acc);
 
 	CalculateAccelerometerInEarthFrame(&rotation_matrix_earth, low_pass_accel, accel_data_earthframe);
+	MadgwickFilterXIO(low_pass_gyro, accel_data_earthframe, &quat);
 
-	/* Record 50 previous samples */
+	if (uart_prescaler == 0)
+	{
+		CalcQuaternionToEuler(quat, &angles);
+		sprintf(uart_buffer, "{'yaw':%.2f, 'pitch':%.2f, 'roll':%.2f}\r\n", angles.yaw, angles.pitch, angles.roll);
+		HAL_UART_Transmit(&huart2,(uint8_t*) uart_buffer, strlen(uart_buffer), 1000);
+	}
+
+	/*
+	// Record 50 previous samples
 	for (uint8_t j = 0; j < 6; j++)
 	{
 		for (uint8_t i =  0; i < (TAMPERING_BUFFER_SIZE - 1); i++)
@@ -264,7 +273,7 @@ int main(void)
 			CalcQuaternionToEuler(quat, &angles);
 			CalcAngleDifference(&diff, &angles, &prev, &angles_buffer);
 
-			/* Simulate expected movements vs not expected movement */
+			// Simulate expected movements vs not expected movement
 
 			if (moving_expected)
 			{
@@ -286,6 +295,8 @@ int main(void)
 		}
 		was_moving = 0;
 	}
+
+	*/
 
 	duration = (__HAL_TIM_GET_COUNTER(&htim16))*1000.0/clock;
 	duration_diff = SAMPLE_TIME_ICM - duration;

@@ -29,7 +29,7 @@ SOFTWARE. */
 
 /* Mahony Filter Parameters */
 static float k_i = 1.1;
-static float k_p = 0.4;
+static float k_p = 0.3;
 float eInt[3] = {0,0,0};
 float i[3] = {0,0,0};
 

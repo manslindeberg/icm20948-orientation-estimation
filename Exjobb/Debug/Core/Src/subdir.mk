@@ -7,6 +7,7 @@
 C_SRCS += \
 ../Core/Src/ICM20948_SPI.c \
 ../Core/Src/calc.c \
+../Core/Src/interpolation.c \
 ../Core/Src/main.c \
 ../Core/Src/stm32g0xx_hal_msp.c \
 ../Core/Src/stm32g0xx_it.c \
@@ -17,6 +18,7 @@ C_SRCS += \
 OBJS += \
 ./Core/Src/ICM20948_SPI.o \
 ./Core/Src/calc.o \
+./Core/Src/interpolation.o \
 ./Core/Src/main.o \
 ./Core/Src/stm32g0xx_hal_msp.o \
 ./Core/Src/stm32g0xx_it.o \
@@ -27,6 +29,7 @@ OBJS += \
 C_DEPS += \
 ./Core/Src/ICM20948_SPI.d \
 ./Core/Src/calc.d \
+./Core/Src/interpolation.d \
 ./Core/Src/main.d \
 ./Core/Src/stm32g0xx_hal_msp.d \
 ./Core/Src/stm32g0xx_it.d \
@@ -42,7 +45,7 @@ Core/Src/%.o: ../Core/Src/%.c Core/Src/subdir.mk
 clean: clean-Core-2f-Src
 
 clean-Core-2f-Src:
-	-$(RM) ./Core/Src/ICM20948_SPI.d ./Core/Src/ICM20948_SPI.o ./Core/Src/calc.d ./Core/Src/calc.o ./Core/Src/main.d ./Core/Src/main.o ./Core/Src/stm32g0xx_hal_msp.d ./Core/Src/stm32g0xx_hal_msp.o ./Core/Src/stm32g0xx_it.d ./Core/Src/stm32g0xx_it.o ./Core/Src/syscalls.d ./Core/Src/syscalls.o ./Core/Src/sysmem.d ./Core/Src/sysmem.o ./Core/Src/system_stm32g0xx.d ./Core/Src/system_stm32g0xx.o
+	-$(RM) ./Core/Src/ICM20948_SPI.d ./Core/Src/ICM20948_SPI.o ./Core/Src/calc.d ./Core/Src/calc.o ./Core/Src/interpolation.d ./Core/Src/interpolation.o ./Core/Src/main.d ./Core/Src/main.o ./Core/Src/stm32g0xx_hal_msp.d ./Core/Src/stm32g0xx_hal_msp.o ./Core/Src/stm32g0xx_it.d ./Core/Src/stm32g0xx_it.o ./Core/Src/syscalls.d ./Core/Src/syscalls.o ./Core/Src/sysmem.d ./Core/Src/sysmem.o ./Core/Src/system_stm32g0xx.d ./Core/Src/system_stm32g0xx.o
 
 .PHONY: clean-Core-2f-Src
 

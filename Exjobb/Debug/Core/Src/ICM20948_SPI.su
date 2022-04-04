@@ -7,8 +7,8 @@ ICM20948_SPI.c:116:6:ICM_WriteOneByte	24	static
 ICM20948_SPI.c:125:6:ICM_SelectBank	16	static
 ICM20948_SPI.c:130:6:ICM_Initialize	144	static
 ICM20948_SPI.c:224:9:ICM_GyroConfig	32	static
-ICM20948_SPI.c:270:6:ICM_GyroCalibration	304	static
-ICM20948_SPI.c:335:6:ICM_AccCalibration	296	static
+ICM20948_SPI.c:270:6:ICM_GyroCalibration	320	static
+ICM20948_SPI.c:335:6:ICM_AccCalibration	304	static
 ICM20948_SPI.c:366:6:ICM_ReadGyroData	56	static
 ICM20948_SPI.c:382:6:ICM_ReadAccData	56	static
 ICM20948_SPI.c:398:9:ICM_AccConfig	32	static
