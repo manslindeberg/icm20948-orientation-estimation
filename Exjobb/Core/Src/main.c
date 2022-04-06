@@ -23,6 +23,7 @@
 /* USER CODE BEGIN Includes */
 #include "main.h"
 #include "calc.h"
+#include "interpolation.h"
 #include <string.h>
 #include <stdio.h>
 #include <time.h>
@@ -39,7 +40,7 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 #define TAMPERING_BUFFER_SIZE (50)
-#define TAMPERING_UPPER_THRESHOLD (5.0)
+#define TAMPERING_UPPER_THRESHOLD (10.0)
 #define TAMPERING_LOWER_THRESHOLD (0.2)
 
 #define IMU_MOVABLE  (0)
@@ -131,7 +132,6 @@ int main(void)
 	float tampering_buffer[6][TAMPERING_BUFFER_SIZE];
 
 	// High pass Filter Variables
-
 	float low_pass_gyro[3] = {0,0,0};
 	float prev_low_pass_gyro[3] = {0,0,0};
 	float low_alpha = 0.2;
@@ -173,6 +173,7 @@ int main(void)
 
   while (1)
   {
+	  /*
 	__HAL_TIM_SET_COUNTER(&htim16,0);
 	if(HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13) == 1)
 	{
@@ -183,6 +184,7 @@ int main(void)
 			moving_expected = 1;
 		}
 	}
+	*/
 
 	uart_prescaler = (uart_prescaler + 1) % 50;
 
@@ -194,15 +196,22 @@ int main(void)
 	GyroLowPassFilter(accel_data, prev_low_pass_accel, low_pass_accel, low_alpha_acc);
 
 	CalculateAccelerometerInEarthFrame(&rotation_matrix_earth, low_pass_accel, accel_data_earthframe);
-	MadgwickFilterXIO(low_pass_gyro, accel_data_earthframe, &quat);
+	sprintf(uart_buffer, "{'ax':%.3f, 'ay':%.3f, 'az':%.3f, "
+			"'gx':%.3f, 'gy':%.3f, 'gz':%.3f}\r\n",
+			accel_data_earthframe[0], accel_data_earthframe[1], accel_data_earthframe[2],
+			low_pass_gyro[0], low_pass_gyro[1], low_pass_gyro[2]);
+	HAL_UART_Transmit(&huart2,(uint8_t*) uart_buffer, strlen(uart_buffer), 1000);
+	/*MadgwickFilterXIO(low_pass_gyro, accel_data_earthframe, &quat);
 
 	if (uart_prescaler == 0)
 	{
 		CalcQuaternionToEuler(quat, &angles);
+		angles.yaw -= CalcPoly32Error(angles.yaw, 90 - angles.roll);
+		angles.roll -= CalcPoly23Error(angles.yaw, 90 - angles.roll);
 		sprintf(uart_buffer, "{'yaw':%.2f, 'pitch':%.2f, 'roll':%.2f}\r\n", angles.yaw, angles.pitch, angles.roll);
 		HAL_UART_Transmit(&huart2,(uint8_t*) uart_buffer, strlen(uart_buffer), 1000);
 	}
-
+	*/
 	/*
 	// Record 50 previous samples
 	for (uint8_t j = 0; j < 6; j++)
@@ -269,12 +278,19 @@ int main(void)
 				MadgwickFilterXIO(gyro_data, accel_data, &quat_buffer);
 			}
 
+			// Calc buffer and remove interpolated error
 			CalcQuaternionToEuler(quat_buffer, &angles_buffer);
+			angles_buffer.yaw -= CalcPoly32Error(angles_buffer.yaw, 90 - angles_buffer.roll);
+			angles_buffer.roll -= CalcPoly23Error(angles_buffer.yaw, 90 - angles_buffer.roll);
+
+			// Calc buffer and remove interpolated error
 			CalcQuaternionToEuler(quat, &angles);
+			angles.yaw -= CalcPoly32Error(angles.yaw, 90 - angles.roll);
+			angles.roll += CalcPoly23Error(angles.yaw, 90 - angles.roll);
+
 			CalcAngleDifference(&diff, &angles, &prev, &angles_buffer);
 
 			// Simulate expected movements vs not expected movement
-
 			if (moving_expected)
 			{
 				sprintf(uart_buffer, "MOVEMENT EXPECTED -> Pan %.4f  Tilt %.4f \r\n", diff.yaw, diff.roll);
@@ -295,9 +311,6 @@ int main(void)
 		}
 		was_moving = 0;
 	}
-
-	*/
-
 	duration = (__HAL_TIM_GET_COUNTER(&htim16))*1000.0/clock;
 	duration_diff = SAMPLE_TIME_ICM - duration;
 
@@ -306,6 +319,7 @@ int main(void)
 	  HAL_Delay(duration_diff);
 	}
 
+	*/
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

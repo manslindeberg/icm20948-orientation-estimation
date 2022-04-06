@@ -23,6 +23,27 @@ SOFTWARE. */
 #ifndef SRC_INTERPOLATION_H_
 #define SRC_INTERPOLATION_H_
 
+/* Madgwick Calibration Interpolation from MATLAB script*/
+#define MG00P -1.774
+#define MG10P 0.007119
+#define MG01P 0.00967
+#define MG20P -5.38e-06
+#define MG11P -7.878e-06
+#define MG02P 0.0001361
+#define MG30P -1.487e-07
+#define MG21P 6.914e-08
+#define MG12P -3.358e-07
+
+#define MG00T 0.8559
+#define MG10T 1.768e-06
+#define MG01T 0.04034
+#define MG20T 3.295e-05
+#define MG11T 3.532e-06
+#define MG02T -0.0001032
+#define MG21T 2.714e-07
+#define MG12T 7.007e-08
+#define MG03T -4.74e-06
+
 struct poly {
 	float p00;
 	float p01;
@@ -38,12 +59,11 @@ struct poly {
 	float p21;
 	float p22;
 	float p23;
-	float p21;
 	float p32;
 	float p33;
 };
 
-float CalcPoly23Error(float x, float y, struct poly c);
-float CalcPoly32Error(float x, float y, struct poly c);
+float CalcPoly23Error(float x, float y);
+float CalcPoly32Error(float x, float y);
 
 #endif /* SRC_INTERPOLATION_H_ */

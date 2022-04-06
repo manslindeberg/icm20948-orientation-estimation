@@ -21,14 +21,19 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE. */
 
 
-float CalcPoly23Error(float x, float y, struct poly c)
+#include "interpolation.h"
+
+struct poly c23 = {MG00T,MG01T,MG02T,MG03T,0,MG20T,MG10T,MG11T,MG12T,0,0,MG21T,0,0,0,0};
+struct poly c32 = {MG00P,MG01P,MG02P,0,MG30P,MG20P,MG10P,MG11P,MG12P,0,0,MG21P,0,0,0,0};
+
+float CalcPoly23Error(float x, float y)
 {
-	return  (c.p00 + c.p10*x + c.p01*y + c.p20*x*x + c.p11*x*y + c.p02*y*y + c.p21*x*x*y
-	                    + c.p12*x*y*y + c.p03*y*y*y);
+	return  (c23.p00 + c23.p10*x + c23.p01*y + c23.p20*x*x + c23.p11*x*y + c23.p02*y*y +
+			c23.p21*x*x*y + c23.p12*x*y*y + c23.p03*y*y*y);
 }
 
-float CalcPoly32Error(float x, float y, struct poly c)
+float CalcPoly32Error(float x, float y)
 {
-	return (c.p00 + c.p10*x + c.p01*y + c.p20*x*x + c.p11*x*y + c.p02*y*y + c.p30*x*x*x +
-	                    c.p21*x*x*y + c.p12*x*y*y);
+	return (c32.p00 + c32.p10*x + c32.p01*y + c32.p20*x*x + c32.p11*x*y + c32.p02*y*y +
+			c32.p30*x*x*x + c32.p21*x*x*y + c32.p12*x*y*y);
 }
