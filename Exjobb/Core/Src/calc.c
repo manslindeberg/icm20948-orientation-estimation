@@ -119,8 +119,8 @@ void CalcGyroEuler(float *gyro_data, struct euler_angles* eu_gyro_est)
 
 void CalcAccLinearToEuler(float* accel_data, struct euler_angles* eu_acc_est)
 {
-	float pitch = atan(accel_data[0]/accel_data[2])* RAD_2_DEG;
-	float roll = atan(accel_data[1]/sqrt(pow(accel_data[0],2) + pow(accel_data[2],2))) * RAD_2_DEG;
+		float pitch = atan(accel_data[0]/accel_data[2])* RAD_2_DEG;
+		float roll = atan(accel_data[1]/sqrt(pow(accel_data[0],2) + pow(accel_data[2],2))) * RAD_2_DEG;
 
 	eu_acc_est->roll = roll;
 	eu_acc_est->pitch = pitch;
