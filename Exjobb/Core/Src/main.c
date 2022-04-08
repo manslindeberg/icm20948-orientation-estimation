@@ -58,6 +58,7 @@ I2C_HandleTypeDef hi2c1;
 RTC_HandleTypeDef hrtc;
 
 SPI_HandleTypeDef hspi1;
+SPI_HandleTypeDef hspi2;
 
 TIM_HandleTypeDef htim16;
 
@@ -75,6 +76,7 @@ static void MX_USART2_UART_Init(void);
 static void MX_RTC_Init(void);
 static void MX_TIM16_Init(void);
 static void MX_I2C1_Init(void);
+static void MX_SPI2_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -117,10 +119,11 @@ int main(void)
   MX_RTC_Init();
   MX_TIM16_Init();
   MX_I2C1_Init();
+  MX_SPI2_Init();
   /* USER CODE BEGIN 2 */
 
-	ICM_Initialize(&hspi1, &huart2, IMU_MOVABLE);
-	ICM_Initialize(&hspi1, &huart2, IMU_FIXED);
+  	ICM_Initialize(&hspi1, &huart2, IMU_MOVABLE);
+	ICM_Initialize(&hspi2, &huart2, IMU_FIXED);
 
 	char uart_buffer[200];
 
@@ -177,11 +180,11 @@ int main(void)
 
 	HAL_TIM_Base_Start(&htim16);
 	ICM_AccCalibration(&hspi1,&huart2,accel_bias_0, IMU_MOVABLE);
-	ICM_AccCalibration(&hspi1,&huart2,accel_bias_1, IMU_FIXED);
+	ICM_AccCalibration(&hspi2,&huart2,accel_bias_1, IMU_FIXED);
 	CalculateRotationMatrix(accel_bias_0, &rotation_matrix_earth_0);
 	CalculateRotationMatrix(accel_bias_1, &rotation_matrix_earth_1);
 	ICM_GyroCalibration(&hspi1,&huart2, gyro_bias_0, IMU_MOVABLE);
-	ICM_GyroCalibration(&hspi1,&huart2, gyro_bias_1, IMU_FIXED);
+	ICM_GyroCalibration(&hspi2,&huart2, gyro_bias_1, IMU_FIXED);
 
 	sprintf(uart_buffer, "UART_PREAMBLE\r\n");
 	HAL_UART_Transmit(&huart2,(uint8_t*)uart_buffer, strlen(uart_buffer), 1000);
@@ -212,11 +215,11 @@ int main(void)
 
 	// Read Gyroscope
 	ICM_ReadGyroData(&hspi1, gyro_data_0, gyro_bias_0, IMU_MOVABLE);
-	ICM_ReadGyroData(&hspi1, gyro_data_1, gyro_bias_1, IMU_FIXED);
+	ICM_ReadGyroData(&hspi2, gyro_data_1, gyro_bias_1, IMU_FIXED);
 
 	// Read Acceleration
 	ICM_ReadAccData(&hspi1, accel_data_0, IMU_MOVABLE);
-	ICM_ReadAccData(&hspi1, accel_data_1, IMU_FIXED);
+	ICM_ReadAccData(&hspi2, accel_data_1, IMU_FIXED);
 
 	// Low-pass Filter Gyroscope
 	GyroLowPassFilter(gyro_data_0, prev_low_pass_gyro_0, low_pass_gyro_0, low_alpha);
@@ -553,6 +556,46 @@ static void MX_SPI1_Init(void)
 }
 
 /**
+  * @brief SPI2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_SPI2_Init(void)
+{
+
+  /* USER CODE BEGIN SPI2_Init 0 */
+
+  /* USER CODE END SPI2_Init 0 */
+
+  /* USER CODE BEGIN SPI2_Init 1 */
+
+  /* USER CODE END SPI2_Init 1 */
+  /* SPI2 parameter configuration*/
+  hspi2.Instance = SPI2;
+  hspi2.Init.Mode = SPI_MODE_MASTER;
+  hspi2.Init.Direction = SPI_DIRECTION_2LINES;
+  hspi2.Init.DataSize = SPI_DATASIZE_8BIT;
+  hspi2.Init.CLKPolarity = SPI_POLARITY_LOW;
+  hspi2.Init.CLKPhase = SPI_PHASE_1EDGE;
+  hspi2.Init.NSS = SPI_NSS_SOFT;
+  hspi2.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_2;
+  hspi2.Init.FirstBit = SPI_FIRSTBIT_MSB;
+  hspi2.Init.TIMode = SPI_TIMODE_DISABLE;
+  hspi2.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
+  hspi2.Init.CRCPolynomial = 7;
+  hspi2.Init.CRCLength = SPI_CRC_LENGTH_DATASIZE;
+  hspi2.Init.NSSPMode = SPI_NSS_PULSE_ENABLE;
+  if (HAL_SPI_Init(&hspi2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN SPI2_Init 2 */
+
+  /* USER CODE END SPI2_Init 2 */
+
+}
+
+/**
   * @brief TIM16 Initialization Function
   * @param None
   * @retval None
@@ -644,9 +687,13 @@ static void MX_GPIO_Init(void)
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
+  __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8|GPIO_PIN_9, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : PC13 */
   GPIO_InitStruct.Pin = GPIO_PIN_13;
@@ -654,8 +701,15 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PC8 PC9 */
-  GPIO_InitStruct.Pin = GPIO_PIN_8|GPIO_PIN_9;
+  /*Configure GPIO pin : PB12 */
+  GPIO_InitStruct.Pin = GPIO_PIN_12;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : PC9 */
+  GPIO_InitStruct.Pin = GPIO_PIN_9;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;

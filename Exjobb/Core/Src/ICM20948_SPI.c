@@ -64,7 +64,7 @@ void ICM_CS_Low(uint8_t index)
 
 	else if (index == 1)
 	{
-		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_RESET);
 	}
 }
 
@@ -77,7 +77,7 @@ void ICM_CS_High(uint8_t index)
 
 	else if (index == 1)
 	{
-		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_SET);
 	}
 }
 
