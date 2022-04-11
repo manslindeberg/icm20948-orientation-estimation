@@ -407,7 +407,7 @@ void MadgwickFilterArduino(float *gyro_data, float *accel_data, struct quaternio
 	q->q4 = q3;
 }
 
-void GyroLowPassFilter(float *gyro_data, float* prev_filt, float* filt, float a)
+void GyroLowPassFilter1(float *gyro_data, float* prev_filt, float* filt, float a)
 {
 	// Calculating new high-pass filtered data
 	filt[0] = prev_filt[0] + a*(gyro_data[0] - prev_filt[0]);
@@ -419,6 +419,17 @@ void GyroLowPassFilter(float *gyro_data, float* prev_filt, float* filt, float a)
 	prev_filt[2] = filt[2];
 }
 
+void GyroLowPassFilter2(float *gyro_data, float* prev_filt, float* filt, float a)
+{
+	// Calculating new high-pass filtered data
+	filt[0] = prev_filt[0] + a*(gyro_data[0] - prev_filt[0]);
+	filt[1] = prev_filt[1] + a*(gyro_data[1] - prev_filt[1]);
+	filt[2] = prev_filt[2] + a*(gyro_data[2] - prev_filt[2]);
+
+	prev_filt[0] = filt[0];
+	prev_filt[1] = filt[1];
+	prev_filt[2] = filt[2];
+}
 
 void GyroHighPassFilter(float *gyro_data, float* prev_gyro_data, float* prev_filt, float* filt, float a)
 {

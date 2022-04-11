@@ -28,9 +28,6 @@ SOFTWARE. */
 #ifndef SRC_ICM20948_SPI_H_
 #define SRC_ICM20948_SPI_H_
 
-uint16_t accel_data[3];
-uint16_t gyro_data[3];
-int16_t mag_data[3];
 extern float magnet_offset;
 
 #define ACC_CALIBRATION_SAMPLES (500)
