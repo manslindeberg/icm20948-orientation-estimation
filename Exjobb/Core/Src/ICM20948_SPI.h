@@ -201,7 +201,7 @@ extern float magnet_offset;
 #define ACCEL_CONFIG_4G (0b00000010)
 #define ACCEL_CONFIG_8G (0b00110101)
 #define ACCEL_CONFIG_16G (0b00000110)
-#define ACCEL_SCALE_SELECT (8)
+#define ACCEL_SCALE_SELECT (2)
 
 #define ACC_NO_FILTER (0b000000)
 #define ACC_FILTER_246 (0b00000001)

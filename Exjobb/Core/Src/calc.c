@@ -72,11 +72,11 @@ void CalcQuaternionToEuler2(struct quaternion quat, struct euler_angles *eu)
 	}
 }
 
-void CalcAngleDifference(struct euler_angles *diff, struct euler_angles *a, struct euler_angles *b, struct euler_angles *add_on)
+void CalcAngleDifference(struct euler_angles *diff, struct euler_angles *a, struct euler_angles *b, struct euler_angles *c)
 {
-	diff->yaw = (a->yaw - b->yaw);
-	diff->pitch = (a->pitch - b->pitch);
-	diff->roll = (a->roll - b->roll);
+	diff->yaw = (a->yaw - b->yaw) + (a->yaw - c->yaw);
+	diff->pitch = (a->pitch - b->pitch) + (a->pitch - c->pitch);
+	diff->roll = (a->roll - b->roll) + (a->roll - c->roll);
 
 	if (diff->yaw > 180.0)
 	{

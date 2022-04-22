@@ -1,6 +1,6 @@
 calc.c:39:6:CalcQuaternionToEuler	48	static
 calc.c:46:6:CalcQuaternionToEuler2	48	static
-calc.c:75:6:CalcAngleDifference	24	static
+calc.c:75:6:CalcAngleDifference	32	static
 calc.c:113:6:CalcGyroEuler	24	static
 calc.c:120:6:CalcAccLinearToEuler	40	static
 calc.c:129:6:CalcGyroQuaternion	88	static

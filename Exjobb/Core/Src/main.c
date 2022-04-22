@@ -38,12 +38,15 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define TAMPERING_BUFFER_SIZE (50)
+#define TAMPERING_BUFFER_SIZE (20)
 #define TAMPERING_UPPER_THRESHOLD (5.0)
-#define TAMPERING_LOWER_THRESHOLD (0.2)
+#define TAMPERING_LOWER_THRESHOLD (0.3)
 
 #define IMU_MOVABLE  (0)
 #define IMU_FIXED   (1)
+
+//#define TAMPERING_BUFFER 0
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -126,10 +129,10 @@ int main(void)
 
 	char uart_buffer[200];
 
-	float accel_data_zero[3] = {0,0,0};
-	float accel_data_one[3] = {0,0,0};
-	float gyro_data_zero[3] = {0,0,0};
-	float gyro_data_one[3] = {0,0,0};
+	float accel_data_0[3] = {0,0,0};
+	float accel_data_1[3] = {0,0,0};
+	float gyro_data_0[3] = {0,0,0};
+	float gyro_data_1[3] = {0,0,0};
 	float accel_data_earthframe_0[3] = {0,0,0};
 	float accel_data_earthframe_1[3] = {0,0,0};
 	float gyro_bias_0[3] = {0,0,0};
@@ -137,37 +140,55 @@ int main(void)
 	float accel_bias_0[2] = {0,0};
 	float accel_bias_1[2] = {0,0};
 
-	//float tampering_buffer[6][TAMPERING_BUFFER_SIZE];
+	#ifdef TAMPERING_BUFFER
+		float tampering_buffer_0[6][TAMPERING_BUFFER_SIZE];
+		float tampering_buffer_1[6][TAMPERING_BUFFER_SIZE];
+	#endif
 
 	// High pass Filter Variables
+	float low_pass_gyro_0[3] = {0,0,0};
+	float low_pass_gyro_1[3] = {0,0,0};
+	float prev_low_pass_gyro_0[3] = {0,0,0};
+	float prev_low_pass_gyro_1[3] = {0,0,0};
+	float low_alpha_gyro = 0.2;
 
-	float low_pass_gyro_zero[3] = {0,0,0};
-	float low_pass_gyro_one[3] = {0,0,0};
-	float prev_low_pass_gyro_zero[3] = {0,0,0};
-	float prev_low_pass_gyro_one[3] = {0,0,0};
-	float low_alpha = 0.2;
-
-	float low_pass_accel_zero[3] = {0,0,0};
-	float low_pass_accel_one[3] = {0,0,0};
-	float prev_low_pass_accel_zero[3] = {0,0,0};
-	float prev_low_pass_accel_one[3] = {0,0,0};
+	float low_pass_accel_0[3] = {0,0,0};
+	float low_pass_accel_1[3] = {0,0,0};
+	float prev_low_pass_accel_0[3] = {0,0,0};
+	float prev_low_pass_accel_1[3] = {0,0,0};
 	float low_alpha_acc = 0.2;
 
 	struct quaternion quat_0 = {1,0,0,0};
 	struct quaternion quat_1 = {1,0,0,0};
-//	struct quaternion quat_buffer = {1,0,0,0};
+	#ifdef TAMPERING_BUFFER
+		struct quaternion quat_buffer_0 = {1,0,0,0};
+		struct quaternion quat_buffer_1 = {1,0,0,0};
+	#endif
 	struct euler_angles angles_0 = {0,0,0};
 	struct euler_angles angles_1 = {0,0,0};
-//	struct euler_angles angles_buffer = {0,0,0};
-	struct euler_angles diff = {0,0,0};
+	struct euler_angles angles_buffer_0 = {0,0,0};
+	struct euler_angles angles_buffer_1 = {0,0,0};
 	struct euler_angles prev_0 = {0,0,0};
 	struct euler_angles prev_1 = {0,0,0};
+	struct euler_angles diff_0 = {0,0,0};
+	struct euler_angles diff_1 = {0,0,0};
 	struct matrix rotation_matrix_earth_0 = {0,0,0,0,0,0,0,0,0};
 	struct matrix rotation_matrix_earth_1 = {0,0,0,0,0,0,0,0,0};
 
 	float duration_diff = 0;
 	float duration = 0;
 	float clock = 16000000/16.0;
+	float motion_duration = 0;
+
+	float diff_pan_0;
+	float diff_pan_1;
+	float diff_tilt_0;
+	float diff_tilt_1;
+	float diff_pitch_0;
+	float diff_pitch_1;
+	float diff_pan_0_1;
+	float diff_tilt_0_1;
+	float diff_pitch_0_1;
 
 	int8_t is_moving[3] = {0,0,0};
 	int8_t was_moving = 0;
@@ -197,79 +218,77 @@ int main(void)
 	uart_prescaler = (uart_prescaler + 1) % 50;
 
 	// IMU 0 READ DATA
-	ICM_ReadGyroData(&hspi1, gyro_data_zero, gyro_bias_0, IMU_MOVABLE);
-	ICM_ReadAccData(&hspi1, accel_data_zero, IMU_MOVABLE);
+	ICM_ReadGyroData(&hspi1, gyro_data_0, gyro_bias_0, IMU_MOVABLE);
+	ICM_ReadAccData(&hspi1, accel_data_0, IMU_MOVABLE);
 
 	// IMU 1 READ DATA
-	ICM_ReadGyroData(&hspi2, gyro_data_one, gyro_bias_1, IMU_FIXED);
-	ICM_ReadAccData(&hspi2, accel_data_one, IMU_FIXED);
+	ICM_ReadGyroData(&hspi2, gyro_data_1, gyro_bias_1, IMU_FIXED);
+	ICM_ReadAccData(&hspi2, accel_data_1, IMU_FIXED);
 
-	/* Low-pass Filter Gyroscope & Acceleration */
-	GyroLowPassFilter1(gyro_data_zero, prev_low_pass_gyro_zero, low_pass_gyro_zero, low_alpha);
-	GyroLowPassFilter1(accel_data_zero, prev_low_pass_accel_zero, low_pass_accel_zero, low_alpha_acc);
+	// Low-pass Filter Gyroscope & Acceleration IMU 0
+	GyroLowPassFilter1(gyro_data_0, prev_low_pass_gyro_0, low_pass_gyro_0, low_alpha_gyro);
+	GyroLowPassFilter1(accel_data_0, prev_low_pass_accel_0, low_pass_accel_0, low_alpha_acc);
 
-	GyroLowPassFilter2(gyro_data_one, prev_low_pass_gyro_one, low_pass_gyro_one, low_alpha);
-	GyroLowPassFilter2(accel_data_one, prev_low_pass_accel_one, low_pass_accel_one, low_alpha_acc);
+	// Low-pass Filter Gyroscope & Acceleration IMU 0
+	GyroLowPassFilter2(gyro_data_1, prev_low_pass_gyro_1, low_pass_gyro_1, low_alpha_gyro);
+	GyroLowPassFilter2(accel_data_1, prev_low_pass_accel_1, low_pass_accel_1, low_alpha_acc);
 
-	CalculateAccelerometerInEarthFrame(&rotation_matrix_earth_0, low_pass_accel_zero, accel_data_earthframe_0);
-	CalculateAccelerometerInEarthFrame(&rotation_matrix_earth_1, low_pass_accel_one, accel_data_earthframe_1);
+	// Rotate Accelerometer from Earth frame into reference frame
+	CalculateAccelerometerInEarthFrame(&rotation_matrix_earth_0, low_pass_accel_0, accel_data_earthframe_0);
+	CalculateAccelerometerInEarthFrame(&rotation_matrix_earth_1, low_pass_accel_1, accel_data_earthframe_1);
 
-	/*
-	MadgwickFilterXIO(low_pass_gyro_zero, accel_data_earthframe_0, &quat_0);
-	MadgwickFilterXIO(low_pass_gyro_one, accel_data_earthframe_1, &quat_1);
-
-	if (uart_prescaler == 0)
-	{
-		CalcQuaternionToEuler(quat_0, &angles_0);
-		CalcQuaternionToEuler(quat_1, &angles_1);
-		sprintf(uart_buffer, " movabel pan:%.3f  ---  fixed pan :%.3f\r\n", angles_0.yaw, angles_1.yaw);
-		HAL_UART_Transmit(&huart2,(uint8_t*) uart_buffer, strlen(uart_buffer), 1000);
-	}
-
-	*/
-	/*
-	for (uint8_t j = 0; j < 6; j++)
-	{
-		for (uint8_t i =  0; i < (TAMPERING_BUFFER_SIZE - 1); i++)
+	#ifdef TAMPERING_BUFFER
+		// Record TAMPERING_BUFFER_SIZE of previous measurements
+		for (uint8_t j = 0; j < 6; j++)
 		{
-			tampering_buffer[j][i+1] = tampering_buffer[j][i];
+			for (uint8_t i =  0; i < (TAMPERING_BUFFER_SIZE - 1); i++)
+			{
+				tampering_buffer_0[j][i+1] = tampering_buffer_0[j][i];
+				tampering_buffer_1[j][i+1] = tampering_buffer_1[j][i];
+			}
 		}
-	}
 
-	tampering_buffer[0][0] = accel_data_earthframe_0[0];
-	tampering_buffer[1][0] = accel_data_earthframe_0[1];
-	tampering_buffer[2][0] = accel_data_earthframe_0[2];
-	tampering_buffer[3][0] = low_pass_gyro_zero[0];
-	tampering_buffer[4][0] = low_pass_gyro_zero[1];
-	tampering_buffer[5][0] = low_pass_gyro_zero[2];
+		tampering_buffer_0[0][0] = accel_data_earthframe_0[0];
+		tampering_buffer_0[1][0] = accel_data_earthframe_0[1];
+		tampering_buffer_0[2][0] = accel_data_earthframe_0[2];
+		tampering_buffer_0[3][0] = low_pass_gyro_0[0];
+		tampering_buffer_0[4][0] = low_pass_gyro_0[1];
+		tampering_buffer_0[5][0] = low_pass_gyro_0[2];
 
-	*/
+		tampering_buffer_1[0][0] = accel_data_earthframe_1[0];
+		tampering_buffer_1[1][0] = accel_data_earthframe_1[1];
+		tampering_buffer_1[2][0] = accel_data_earthframe_1[2];
+		tampering_buffer_1[3][0] = low_pass_gyro_1[0];
+		tampering_buffer_1[4][0] = low_pass_gyro_1[1];
+		tampering_buffer_1[5][0] = low_pass_gyro_1[2];
+	#endif
 
-	if (low_pass_gyro_zero[0] > TAMPERING_UPPER_THRESHOLD || low_pass_gyro_zero[0] < -TAMPERING_UPPER_THRESHOLD)
+	// Detect angular movements
+	if (low_pass_gyro_0[0] > TAMPERING_UPPER_THRESHOLD || low_pass_gyro_0[0] < -TAMPERING_UPPER_THRESHOLD)
 	{
 		is_moving[0] = 1;
 	}
 
-	if (low_pass_gyro_zero[1] > TAMPERING_UPPER_THRESHOLD || low_pass_gyro_zero[1] < -TAMPERING_UPPER_THRESHOLD)
+	if (low_pass_gyro_0[1] > TAMPERING_UPPER_THRESHOLD || low_pass_gyro_0[1] < -TAMPERING_UPPER_THRESHOLD)
 	{
 		is_moving[1] = 1;
 	}
 
-	if (low_pass_gyro_zero[2] > TAMPERING_UPPER_THRESHOLD || low_pass_gyro_zero[2] < -TAMPERING_UPPER_THRESHOLD)
+	if (low_pass_gyro_0[2] > TAMPERING_UPPER_THRESHOLD || low_pass_gyro_0[2] < -TAMPERING_UPPER_THRESHOLD)
 	{
 		is_moving[2] = 1;
 	}
 
-	if (low_pass_gyro_zero[0] < TAMPERING_LOWER_THRESHOLD && low_pass_gyro_zero[0] > -TAMPERING_LOWER_THRESHOLD)
+	if (low_pass_gyro_0[0] < TAMPERING_LOWER_THRESHOLD && low_pass_gyro_0[0] > -TAMPERING_LOWER_THRESHOLD)
 	{
 		is_moving[0] = 0;
 	}
 
-	if (low_pass_gyro_zero[1] < TAMPERING_LOWER_THRESHOLD && low_pass_gyro_zero[1] > -TAMPERING_LOWER_THRESHOLD)
+	if (low_pass_gyro_0[1] < TAMPERING_LOWER_THRESHOLD && low_pass_gyro_0[1] > -TAMPERING_LOWER_THRESHOLD)
 	{
 		is_moving[1] = 0;
 	}
-	if (low_pass_gyro_zero[2] < TAMPERING_LOWER_THRESHOLD && low_pass_gyro_zero[2] > -TAMPERING_LOWER_THRESHOLD)
+	if (low_pass_gyro_0[2] < TAMPERING_LOWER_THRESHOLD && low_pass_gyro_0[2] > -TAMPERING_LOWER_THRESHOLD)
 	{
 		is_moving[2] = 0;
 	}
@@ -277,51 +296,230 @@ int main(void)
 	// Camera went from not moving to moving
 	if (is_moving[0] == 1 || is_moving[1] == 1 || is_moving[2] == 1)
 	{
-		MadgwickFilterXIO(low_pass_gyro_zero, accel_data_earthframe_0, &quat_0);
-		MadgwickFilterXIO(low_pass_gyro_one, accel_data_earthframe_1, &quat_1);
+		MadgwickFilterXIO(low_pass_gyro_0, accel_data_earthframe_0, &quat_0);
+		MadgwickFilterXIO(low_pass_gyro_1, accel_data_earthframe_1, &quat_1);
 		was_moving = 1;
-	}
-	else {
-		if (was_moving)
+
+		motion_duration += SAMPLE_TIME_ICM;
+
+		if (motion_duration > 10*1000)
 		{
-			/*
-			for (uint8_t i = 0; i < TAMPERING_BUFFER_SIZE; i++)
+			// Convert Quaternion Space to Euler Angles Regular
+			CalcQuaternionToEuler(quat_0, &angles_0);
+			CalcQuaternionToEuler(quat_1, &angles_1);
+
+			diff_pan_0 = (prev_0.yaw - angles_0.yaw);
+			diff_pan_1 = (prev_1.yaw - angles_1.yaw);
+
+			diff_tilt_0 = (prev_0.roll - angles_0.roll);
+			diff_tilt_1 = (prev_1.roll - angles_1.roll);
+
+			diff_pitch_0 = (prev_0.pitch - angles_0.pitch);
+			diff_pitch_1 = (prev_1.pitch - angles_1.pitch);
+
+			diff_pan_0_1 = diff_pan_0 - diff_pan_1;
+			diff_tilt_0_1 = diff_tilt_0 - diff_tilt_1;
+			diff_pitch_0_1 = diff_pitch_0 - diff_pitch_1;
+
+			if (diff_pan_0_1 > 180.0)
 			{
-				accel_data_zero[0] = tampering_buffer[0][i];
-				accel_data_zero[1] = tampering_buffer[1][i];
-				accel_data_zero[2] = tampering_buffer[2][i];
-				gyro_data_zero[0] = tampering_buffer[3][i];
-				gyro_data_zero[1] = tampering_buffer[4][i];
-				gyro_data_zero[2] = tampering_buffer[5][i];
-				MadgwickFilterXIO(gyro_data_zero, accel_data_zero, &quat_buffer);
+				diff_pan_0_1 = 360.0 - diff_pan_0_1;
 			}
 
-			CalcQuaternionToEuler(quat_buffer, &angles_buffer);
-			CalcQuaternionToEuler(quat, &angles);
-			CalcAngleDifference(&diff, &angles, &prev, &angles_buffer);
-			*/
-			CalcQuaternionToEuler(quat_0, &angles_0);
-			sprintf(uart_buffer, "MOVEMENT EXPECTED -> Pan %.4f  Tilt %.4f \r\n", (prev_0.yaw - angles_0.yaw), (prev_0.roll - angles_0.roll));
-			HAL_UART_Transmit(&huart2,(uint8_t*) uart_buffer, strlen(uart_buffer), 1000);
-			CalcQuaternionToEuler(quat_1, &angles_1);
-			sprintf(uart_buffer, "MOVEMENT EXPECTED -> Pan %.4f  Tilt %.4f \r\n", (prev_1.yaw - angles_1.yaw), (prev_1.roll - angles_1.roll));
-			HAL_UART_Transmit(&huart2,(uint8_t*) uart_buffer, strlen(uart_buffer), 1000);
-			//quat_buffer = quat;
+			if (diff_pan_0_1 < -180.0)
+			{
+				diff_pan_0_1 = -(diff_pan_0_1 + 360.0);
+			}
 
-		float diff_pan = fabs(fabs(prev_0.yaw - angles_0.yaw) - fabs(prev_1.yaw - angles_1.yaw));
-		float diff_tilt = fabs(fabs(prev_0.roll - angles_0.roll) - fabs(prev_1.roll - angles_1.roll));
+			if (diff_tilt_0_1 > 180.0)
+			{
+				diff_tilt_0_1 = 360.0 - diff_tilt_0_1;
+			}
 
-		if((diff_pan > 3.0) | (diff_tilt > 3.0)){
-			sprintf(uart_buffer, "TAMPERING! Error: %.4f : %.4f \r\n", diff_pan, diff_tilt);
+			if (diff_tilt_0_1 < -180.0)
+			{
+				diff_tilt_0_1 = -(diff_tilt_0_1 + 360.0);
+			}
+
+			if (diff_pitch_0_1 > 180.0)
+			{
+				diff_pitch_0_1 = 360.0 - diff_pitch_0_1;
+			}
+
+			if (diff_pitch_0_1 < -180.0)
+			{
+				diff_pitch_0_1 = -(diff_pitch_0_1 + 360.0);
+			}
+
+			if ((fabs(diff_pan_0_1) > 3.0) | (fabs(diff_tilt_0_1) > 3.0) | (fabs(diff_pitch_0_1) > 3.0))
+			{
+				// Movement Expected - measured == expected?
+				if (moving_expected)
+				{
+					sprintf(uart_buffer, "Movement Expected! measured: %.2f : %.2f : %.2f \r\n", diff_pan_0_1, diff_tilt_0_1, diff_pitch_0_1);
+					HAL_UART_Transmit(&huart2,(uint8_t*) uart_buffer, strlen(uart_buffer), 1000);
+				} else {
+					// Movement NOT Expected - Tampering detected
+					sprintf(uart_buffer, "Movement not Expected! tampering: %.2f : %.2f : %.2f \r\n", diff_pan_0_1, diff_tilt_0_1, diff_pitch_0_1);
+					HAL_UART_Transmit(&huart2,(uint8_t*) uart_buffer, strlen(uart_buffer), 1000);
+				}
+			}
+
+			// Update previous quaternion state
+			prev_0.roll = angles_0.roll;
+			prev_0.yaw = angles_0.yaw;
+			prev_0.pitch = angles_0.pitch;
+			prev_1.roll = angles_1.roll;
+			prev_1.yaw = angles_1.yaw;
+			prev_1.pitch = angles_1.pitch;
+			motion_duration = 0;
+		} else if (uart_prescaler == 0)
+		{
+			sprintf(uart_buffer, "MOVEMENT DURATION: %.3f \r\n", motion_duration);
 			HAL_UART_Transmit(&huart2,(uint8_t*) uart_buffer, strlen(uart_buffer), 1000);
 		}
-
-		prev_0.roll = angles_0.roll;
-		prev_0.yaw = angles_0.yaw;
-		prev_1.roll = angles_1.roll;
-		prev_1.yaw = angles_1.yaw;
+	} else {
+		if (was_moving)
+		{
 
 
+			#ifdef TAMPERING_BUFFER
+				// Integrate recording window samples before threshold IMU 0
+				for (int8_t i = TAMPERING_BUFFER_SIZE-1; i >= 0; i--)
+				{
+
+					accel_data_0[0] = tampering_buffer_0[0][i];
+					accel_data_0[1] = tampering_buffer_0[1][i];
+					accel_data_0[2] = tampering_buffer_0[2][i];
+					gyro_data_0[0] = tampering_buffer_0[3][i];
+					gyro_data_0[1] = tampering_buffer_0[4][i];
+					gyro_data_0[2] = tampering_buffer_0[5][i];
+					MadgwickFilterXIO(gyro_data_0, accel_data_0, &quat_buffer_0);
+
+				}
+
+				// Integrate recording window samples before threshold IMU 0
+				for (int8_t i = TAMPERING_BUFFER_SIZE-1; i >= 0; i--)
+				{
+					accel_data_1[0] = tampering_buffer_1[0][i];
+					accel_data_1[1] = tampering_buffer_1[1][i];
+					accel_data_1[2] = tampering_buffer_1[2][i];
+					gyro_data_1[0] = tampering_buffer_1[3][i];
+					gyro_data_1[1] = tampering_buffer_1[4][i];
+					gyro_data_1[2] = tampering_buffer_1[5][i];
+					MadgwickFilterXIO(gyro_data_1, accel_data_1, &quat_buffer_1);
+				}
+
+				// Convert Quaternion Space to Euler Angles Buffer
+				CalcQuaternionToEuler(quat_buffer_0, &angles_buffer_0);
+				CalcQuaternionToEuler(quat_buffer_1, &angles_buffer_1);
+			#endif
+
+			// Convert Quaternion Space to Euler Angles Regular
+			CalcQuaternionToEuler(quat_0, &angles_0);
+			CalcQuaternionToEuler(quat_1, &angles_1);
+
+
+
+			#ifdef TAMPERING_BUFFER
+				diff_pan_0 = (prev_0.yaw - angles_buffer_0.yaw) + (prev_0.yaw - angles_0.yaw);
+				diff_pan_1 = (prev_1.yaw - angles_buffer_1.yaw) + (prev_1.yaw - angles_1.yaw);
+
+				diff_tilt_0 = (prev_0.roll - angles_buffer_0.roll) + (prev_0.roll - angles_0.roll);
+				diff_tilt_1 = (prev_1.roll - angles_buffer_1.roll) + (prev_1.roll - angles_1.roll);
+				float temp1 = prev_0.yaw - angles_buffer_0.yaw;
+				float temp2 = prev_0.yaw - angles_0.yaw;
+				float temp3 = prev_1.yaw - angles_buffer_1.yaw;
+				float temp4 = prev_1.yaw - angles_1.yaw;
+
+				float temp5 = prev_0.roll - angles_buffer_0.roll;
+				float temp6 = prev_0.roll - angles_0.roll;
+				float temp7 = prev_1.roll - angles_buffer_1.roll;
+				float temp8 = prev_1.roll - angles_1.roll;
+
+				sprintf(uart_buffer, "diff_yaw_0 buffer: %.3f  other: %.3f \r\n", temp1, temp2);
+				HAL_UART_Transmit(&huart2,(uint8_t*) uart_buffer, strlen(uart_buffer), 1000);
+
+				sprintf(uart_buffer, "diff_yaw_1 buffer: %.3f  other: %.3f \r\n", temp3 ,temp4);
+				HAL_UART_Transmit(&huart2,(uint8_t*) uart_buffer, strlen(uart_buffer), 1000);
+
+				sprintf(uart_buffer, "diff_roll_0 buffer: %.3f  other: %.3f \r\n", temp5, temp6);
+				HAL_UART_Transmit(&huart2,(uint8_t*) uart_buffer, strlen(uart_buffer), 1000);
+
+				sprintf(uart_buffer, "diff_roll_1 buffer: %.3f  other: %.3f \r\n", temp7 ,temp8);
+				HAL_UART_Transmit(&huart2,(uint8_t*) uart_buffer, strlen(uart_buffer), 1000);
+			#else
+				diff_pan_0 = (prev_0.yaw - angles_0.yaw);
+				diff_pan_1 = (prev_1.yaw - angles_1.yaw);
+
+				diff_tilt_0 = (prev_0.roll - angles_0.roll);
+				diff_tilt_1 = (prev_1.roll - angles_1.roll);
+
+				diff_pitch_0 = (prev_0.pitch - angles_0.pitch);
+				diff_pitch_1 = (prev_1.pitch - angles_1.pitch);
+			#endif
+
+			diff_pan_0_1 = diff_pan_0 - diff_pan_1;
+			diff_tilt_0_1 = diff_tilt_0 - diff_tilt_1;
+			diff_pitch_0_1 = diff_pitch_0 - diff_pitch_1;
+
+			if (diff_pan_0_1 > 180.0)
+			{
+				diff_pan_0_1 = 360.0 - diff_pan_0_1;
+			}
+
+			if (diff_pan_0_1 < -180.0)
+			{
+				diff_pan_0_1 = -(diff_pan_0_1 + 360.0);
+			}
+
+			if (diff_tilt_0_1 > 180.0)
+			{
+				diff_tilt_0_1 = 360.0 - diff_tilt_0_1;
+			}
+
+			if (diff_tilt_0_1 < -180.0)
+			{
+				diff_tilt_0_1 = -(diff_tilt_0_1 + 360.0);
+			}
+
+			if (diff_pitch_0_1 > 180.0)
+			{
+				diff_pitch_0_1 = 360.0 - diff_pitch_0_1;
+			}
+
+			if (diff_pitch_0_1 < -180.0)
+			{
+				diff_pitch_0_1 = -(diff_pitch_0_1 + 360.0);
+			}
+
+			if ((fabs(diff_pan_0_1) > 3.0) | (fabs(diff_tilt_0_1) > 3.0) | (fabs(diff_pitch_0_1) > 3.0))
+			{
+				// Movement Expected - measured == expected?
+				if (moving_expected)
+				{
+					sprintf(uart_buffer, "Movement Expected! measured: %.2f : %.2f : %.2f \r\n", diff_pan_0_1, diff_tilt_0_1, diff_pitch_0_1);
+					HAL_UART_Transmit(&huart2,(uint8_t*) uart_buffer, strlen(uart_buffer), 1000);
+				} else {
+					// Movement NOT Expected - Tampering detected
+					sprintf(uart_buffer, "Movement not Expected! tampering: %.2f : %.2f : %.2f \r\n", diff_pan_0_1, diff_tilt_0_1, diff_pitch_0_1);
+					HAL_UART_Transmit(&huart2,(uint8_t*) uart_buffer, strlen(uart_buffer), 1000);
+				}
+			}
+
+			// Update previous quaternion state
+			prev_0.roll = angles_0.roll;
+			prev_0.yaw = angles_0.yaw;
+			prev_0.pitch = angles_0.pitch;
+			prev_1.roll = angles_1.roll;
+			prev_1.yaw = angles_1.yaw;
+			prev_1.pitch = angles_1.pitch;
+			motion_duration = 0;
+			// Update buffer to point at latest "non-moving" quaternion state
+			#ifdef TAMPERING_BUFFER
+				quat_buffer_0 = quat_0;
+				quat_buffer_1 = quat_1;
+			#endif
 		}
 		else if (uart_prescaler == 0)
 		{
@@ -331,7 +529,7 @@ int main(void)
 		was_moving = 0;
 	}
 
-
+	// Calculate loop execution duration and wait if not finished
 	duration = (__HAL_TIM_GET_COUNTER(&htim16))*1000.0/clock;
 	duration_diff = SAMPLE_TIME_ICM - duration;
 
