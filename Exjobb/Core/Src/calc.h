@@ -24,6 +24,9 @@ SOFTWARE. */
 #define SRC_CALC_H_
 #include "math.h"
 
+#define TAMPERING_UPPER_THRESHOLD (5.0)
+#define TAMPERING_LOWER_THRESHOLD (0.3)
+
 #define RAD_2_DEG (180.0/M_PI)
 #define DEG_2_RAD (M_PI/180.0)
 
@@ -80,6 +83,7 @@ void MahonyFilter(float*, float*, struct quaternion *);
 void CalculateRotationMatrix(float*, struct matrix *);
 void CalculateAccelerometerInEarthFrame(struct matrix *, float*, float*);
 void CalcAngleDifference(struct euler_angles*, struct euler_angles*, struct euler_angles*, struct euler_angles*);
+void MarkIsMoving(float *gyro_data, float *is_moving);
 struct quaternion q_multiplication(struct quaternion quad_left, struct quaternion quad_right);
 struct quaternion q_add(struct quaternion quad_left, struct quaternion quad_right);
 struct quaternion q_subtract(struct quaternion quad_left, struct quaternion quad_right);

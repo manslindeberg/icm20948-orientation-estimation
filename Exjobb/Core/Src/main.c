@@ -28,6 +28,7 @@
 #include <time.h>
 #include <math.h>
 #include "ICM20948_SPI.h"
+#include "interpolation.h"
 
 /* USER CODE END Includes */
 
@@ -39,8 +40,6 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 #define TAMPERING_BUFFER_SIZE (20)
-#define TAMPERING_UPPER_THRESHOLD (5.0)
-#define TAMPERING_LOWER_THRESHOLD (0.3)
 
 #define IMU_MOVABLE  (0)
 #define IMU_FIXED   (1)
@@ -166,12 +165,12 @@ int main(void)
 	#endif
 	struct euler_angles angles_0 = {0,0,0};
 	struct euler_angles angles_1 = {0,0,0};
-	struct euler_angles angles_buffer_0 = {0,0,0};
-	struct euler_angles angles_buffer_1 = {0,0,0};
+	#ifdef TAMPERING_BUFFER
+		struct euler_angles angles_buffer_0 = {0,0,0};
+		struct euler_angles angles_buffer_1 = {0,0,0};
+	#endif
 	struct euler_angles prev_0 = {0,0,0};
 	struct euler_angles prev_1 = {0,0,0};
-	struct euler_angles diff_0 = {0,0,0};
-	struct euler_angles diff_1 = {0,0,0};
 	struct matrix rotation_matrix_earth_0 = {0,0,0,0,0,0,0,0,0};
 	struct matrix rotation_matrix_earth_1 = {0,0,0,0,0,0,0,0,0};
 
@@ -264,6 +263,7 @@ int main(void)
 	#endif
 
 	// Detect angular movements
+		// Detect angular movements
 	if (low_pass_gyro_0[0] > TAMPERING_UPPER_THRESHOLD || low_pass_gyro_0[0] < -TAMPERING_UPPER_THRESHOLD)
 	{
 		is_moving[0] = 1;
@@ -293,6 +293,7 @@ int main(void)
 		is_moving[2] = 0;
 	}
 
+
 	// Camera went from not moving to moving
 	if (is_moving[0] == 1 || is_moving[1] == 1 || is_moving[2] == 1)
 	{
@@ -308,11 +309,11 @@ int main(void)
 			CalcQuaternionToEuler(quat_0, &angles_0);
 			CalcQuaternionToEuler(quat_1, &angles_1);
 
-			diff_pan_0 = (prev_0.yaw - angles_0.yaw);
-			diff_pan_1 = (prev_1.yaw - angles_1.yaw);
+			diff_pan_0 = prev_0.yaw  - angles_0.yaw;
+			diff_pan_1 = prev_1.yaw  - angles_1.yaw;
 
-			diff_tilt_0 = (prev_0.roll - angles_0.roll);
-			diff_tilt_1 = (prev_1.roll - angles_1.roll);
+			diff_tilt_0 = prev_0.roll - angles_0.roll;
+			diff_tilt_1 = prev_1.roll - angles_1.roll;
 
 			diff_pitch_0 = (prev_0.pitch - angles_0.pitch);
 			diff_pitch_1 = (prev_1.pitch - angles_1.pitch);
@@ -351,7 +352,7 @@ int main(void)
 				diff_pitch_0_1 = -(diff_pitch_0_1 + 360.0);
 			}
 
-			if ((fabs(diff_pan_0_1) > 3.0) | (fabs(diff_tilt_0_1) > 3.0) | (fabs(diff_pitch_0_1) > 3.0))
+			if ((fabs(diff_pan_0_1) > 3.0) | (fabs(diff_tilt_0_1) > 5.0) | (fabs(diff_pitch_0_1) > 5.0))
 			{
 				// Movement Expected - measured == expected?
 				if (moving_expected)
@@ -449,11 +450,12 @@ int main(void)
 				sprintf(uart_buffer, "diff_roll_1 buffer: %.3f  other: %.3f \r\n", temp7 ,temp8);
 				HAL_UART_Transmit(&huart2,(uint8_t*) uart_buffer, strlen(uart_buffer), 1000);
 			#else
-				diff_pan_0 = (prev_0.yaw - angles_0.yaw);
-				diff_pan_1 = (prev_1.yaw - angles_1.yaw);
 
-				diff_tilt_0 = (prev_0.roll - angles_0.roll);
-				diff_tilt_1 = (prev_1.roll - angles_1.roll);
+				diff_pan_0 = prev_0.yaw  - angles_0.yaw;
+				diff_pan_1 = prev_1.yaw  - angles_1.yaw;
+
+				diff_tilt_0 = prev_0.roll - angles_0.roll;
+				diff_tilt_1 = prev_1.roll - angles_1.roll;
 
 				diff_pitch_0 = (prev_0.pitch - angles_0.pitch);
 				diff_pitch_1 = (prev_1.pitch - angles_1.pitch);
@@ -493,7 +495,7 @@ int main(void)
 				diff_pitch_0_1 = -(diff_pitch_0_1 + 360.0);
 			}
 
-			if ((fabs(diff_pan_0_1) > 3.0) | (fabs(diff_tilt_0_1) > 3.0) | (fabs(diff_pitch_0_1) > 3.0))
+			if ((fabs(diff_pan_0_1) > 3.0) | (fabs(diff_tilt_0_1) > 5.0) | (fabs(diff_pitch_0_1) > 5.0))
 			{
 				// Movement Expected - measured == expected?
 				if (moving_expected)
